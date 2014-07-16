@@ -246,6 +246,7 @@ public class Cups
 		cupsd = null;
 		try
 		{
+			updateDns(p);
 			cupsd = Runtime.getRuntime().exec(new String[] {PROOT, CUPSD, "-f"}, null, chrootPath(p));
 			for (int i = 0; i < 10 && !isDaemonRunning(p); i++)
 			{
@@ -271,6 +272,11 @@ public class Cups
 		return true;
 	}
 
+	synchronized static void updateDns(Context p)
+	{
+		Proc pp = new Proc(new String[] {"./update-dns.sh"}, chrootPath(p));
+	}
+
 	synchronized static boolean isInstalled(Context p)
 	{
 		return new File(p.getFilesDir().getAbsolutePath() + IMG + CUPSD).exists();
@@ -281,6 +287,7 @@ public class Cups
 		if (isInstalled(p))
 		{
 			startCupsDaemon(p);
+			setText(p, text, p.getResources().getString(R.string.add_printers));
 			p.enableSettingsButton();
 			return;
 		}
@@ -314,17 +321,19 @@ public class Cups
 				InputStream archiveAssets = p.getAssets().open("dist-cups-wheezy.tar.xz");
 				Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
 				copyStream(archiveAssets, proc.getOutputStream());
-				proc.waitFor();
+				int status = proc.waitFor();
+				Log.i(TAG, "Unpacking data from assets: status: " + status);
 			}
 			catch(Exception e)
 			{
+				Log.i(TAG, "Error unpacking data from assets: " + e.toString());
 				Log.i(TAG, "No data archive in assets, trying OBB data");
 				new Proc(new String[] {busybox, "tar", "xJf",
 							Environment.getExternalStorageDirectory().getAbsolutePath() +
 							"/Android/obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb"}, p.getFilesDir());
 			}
 
-			new Proc(new String[] {busybox, "cp", "-a", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
+			new Proc(new String[] {busybox, "cp", "-af", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
 			new Proc(new String[] {busybox, "rm", "-rf", "img-armeabi-v7a", "img-x86"}, p.getFilesDir());
 			stream = p.getAssets().open("cupsd.conf");
 			out = new FileOutputStream(new File(chrootPath(p), "etc/cups/cupsd.conf"));
