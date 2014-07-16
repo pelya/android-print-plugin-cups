@@ -77,7 +77,7 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.Surface;
 import android.app.ProgressDialog;
-import android.printservice.*;
+import java.util.ArrayList;
 
 public class Proc
 {
@@ -88,8 +88,15 @@ public class Proc
 	public Proc(String cmd, File dir)
 	{
 		Log.d(TAG, "Exec: '" + cmd + "' inside " + dir);
-		Process p = Runtime.getRuntime().exec(cmd, null, new File(dir));
-		waitFor(p);
+		status = -1;
+		try
+		{
+			Process p = Runtime.getRuntime().exec(cmd, null, dir);
+			waitFor(p);
+		}
+		catch(IOException e)
+		{
+		}
 	}
 
 	public Proc(String[] cmd, File dir)
@@ -98,48 +105,75 @@ public class Proc
 		for (String s: cmd)
 			sb.append(s + " ");
 		Log.d(TAG, "Exec: '" + sb.toString() + "' inside " + dir);
-		Process p = Runtime.getRuntime().exec(cmd, null, new File(dir));
-		waitFor(p);
+		status = -1;
+		try
+		{
+			Process p = Runtime.getRuntime().exec(cmd, null, dir);
+			waitFor(p);
+		}
+		catch(IOException e)
+		{
+		}
 	}
 
 	void waitFor(final Process p)
 	{
 		Thread tout = new Thread(new Runnable()
 		{
-			public void Run()
+			public void run()
 			{
 				BufferedReader bout = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				String line;
 				ArrayList<String> sb = new ArrayList<String>();
-				while ((line = bout.readLine()) != null)
+				try
 				{
-					sb.add(line);
-					Log.d(TAG, "Exec: out: " + line);
+					while ((line = bout.readLine()) != null)
+					{
+						sb.add(line);
+						Log.d(TAG, "Exec: out: " + line);
+					}
+					bout.close();
 				}
-				bout.close();
+				catch(IOException e)
+				{
+				}
 				out = sb.toArray(out);
 			}
-		}).start();
+		});
+		tout.start();
 		Thread terr = new Thread(new Runnable()
 		{
-			public void Run()
+			public void run()
 			{
 				BufferedReader berr = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				String line;
 				ArrayList<String> sb = new ArrayList<String>();
-				while((line = berr.readLine()) != null)
+				try
 				{
-					sb.add(line);
-					Log.d(TAG, "Exec: err: " + line);
+					while((line = berr.readLine()) != null)
+					{
+						sb.add(line);
+						Log.d(TAG, "Exec: err: " + line);
+					}
+					berr.close();
 				}
-				berr.close();
+				catch(IOException e)
+				{
+				}
 				err = sb.toArray(err);
 			}
-		}).start();
-		status = p.waitFor();
+		});
+		terr.start();
+		try
+		{
+			status = p.waitFor();
+			tout.join();
+			terr.join();
+		}
+		catch(InterruptedException e)
+		{
+		}
 		Log.d(TAG, "Exec: exit status: " + status);
-		tout.join();
-		terr.join();
 		p.destroy();
 	}
 

@@ -78,6 +78,8 @@ import android.util.Log;
 import android.view.Surface;
 import android.app.ProgressDialog;
 import android.text.util.Linkify;
+import android.provider.Settings;
+
 
 public class MainActivity extends Activity
 {
@@ -117,7 +119,7 @@ public class MainActivity extends Activity
 				{
 					public void onClick(View v)
 					{
-						MainActivity.startActivity(new Intent(Settings.ACTION_PRINT_SETTINGS));
+						MainActivity.this.startActivity(new Intent(Settings.ACTION_PRINT_SETTINGS));
 					}
 				});
 				layout.addView(openSettings);

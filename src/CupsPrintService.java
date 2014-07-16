@@ -85,11 +85,11 @@ import java.util.*;
 
 public class CupsPrintService extends PrintService
 {
-	@Override void onConnected()
+	@Override public void onConnected()
 	{
 		Log.d(TAG, "onConnected()");
 		super.onConnected();
-		if (!isInstalled(p))
+		if (!Cups.isInstalled(this))
 		{
 			Intent dialogIntent = new Intent(getBaseContext(), MainActivity.class);
 			dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -97,15 +97,15 @@ public class CupsPrintService extends PrintService
 		}
 		else
 		{
-			startCupsDaemon(this);
+			Cups.startCupsDaemon(this);
 		}
 	}
 
-	@Override void onDisconnected()
+	@Override public void onDisconnected()
 	{
 		Log.d(TAG, "onDisconnected()");
 		super.onDisconnected();
-		stopCupsDaemon(this);
+		Cups.stopCupsDaemon(this);
 	}
 
 	class CupsPrinterDiscoverySession extends PrinterDiscoverySession
@@ -121,12 +121,13 @@ public class CupsPrintService extends PrintService
 			String[] printers = Cups.getPrinters(CupsPrintService.this);
 			for (String pr: printers)
 			{
-				PrinterId id = CupsPrintService.generatePrinterId(pr);
+				PrinterId id = generatePrinterId(pr);
 				PrinterInfo.Builder pi = new PrinterInfo.Builder(id, pr, Cups.getPrinterStatus(CupsPrintService.this, pr));
 				pi.setDescription("");
 				pi.setName(pr);
+				/*
 				PrinterCapabilitiesInfo.Builder pc = new PrinterCapabilitiesInfo.Builder(id);
-				Map<String, String[]> options = getPrinterOptions(CupsPrintService.this, pr);
+				Map<String, String[]> options = Cups.getPrinterOptions(CupsPrintService.this, pr);
 				if (options.containsKey("PageSize"))
 				{
 					String pagesize[] = options.get("PageSize");
@@ -140,11 +141,12 @@ public class CupsPrintService extends PrintService
 				{
 					String res[] = options.get("Resolution");
 					if (res.length > 0)
-						pc.addResolution(Cups.getResolution(res[0]));
+						pc.addResolution(Cups.getResolution(res[0]), true);
 					for (int i = 1; i < res.length; i++)
-						pc.addResolution(Cups.getResolution(res[i]));
+						pc.addResolution(Cups.getResolution(res[i]), false);
 				}
 				pi.setCapabilities(pc.build());
+				*/
 				ret.add(pi.build());
 			}
 			addPrinters(ret);
@@ -158,7 +160,7 @@ public class CupsPrintService extends PrintService
 			pi.setDescription("");
 			pi.setName(pr);
 			PrinterCapabilitiesInfo.Builder pc = new PrinterCapabilitiesInfo.Builder(id);
-			Map<String, String[]> options = getPrinterOptions(CupsPrintService.this, pr);
+			Map<String, String[]> options = Cups.getPrinterOptions(CupsPrintService.this, pr);
 			if (options.containsKey("PageSize"))
 			{
 				String pagesize[] = options.get("PageSize");
@@ -172,9 +174,9 @@ public class CupsPrintService extends PrintService
 			{
 				String res[] = options.get("Resolution");
 				if (res.length > 0)
-					pc.addResolution(Cups.getResolution(res[0]));
+					pc.addResolution(Cups.getResolution(res[0]), true);
 				for (int i = 1; i < res.length; i++)
-					pc.addResolution(Cups.getResolution(res[i]));
+					pc.addResolution(Cups.getResolution(res[i]), false);
 			}
 			pi.setCapabilities(pc.build());
 			ret.add(pi.build());
@@ -204,32 +206,21 @@ public class CupsPrintService extends PrintService
 		public static final String TAG = "CupsPrinterDiscoverySession";
 	}
 
-	@Override PrinterDiscoverySession onCreatePrinterDiscoverySession()
+	@Override public PrinterDiscoverySession onCreatePrinterDiscoverySession()
 	{
 		Log.d(TAG, "onCreatePrinterDiscoverySession()");
 		return new CupsPrinterDiscoverySession();
 	}
 
-	@Override void onPrintJobQueued(android.printservice.PrintJob printJob)
+	@Override public void onPrintJobQueued(android.printservice.PrintJob printJob)
 	{
 		Log.d(TAG, "onPrintJobQueued()");
 	}
 
-	@Override void onRequestCancelPrintJob(android.printservice.PrintJob printJob)
+	@Override public void onRequestCancelPrintJob(android.printservice.PrintJob printJob)
 	{
 		Log.d(TAG, "onRequestCancelPrintJob()");
 	}
 
-	@Override IBinder onBind(Intent intent)
-	{
-		return binder;
-	}
-
-	private final IBinder binder = new Binder() {
-		@Override protected boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException
-		{
-			return super.onTransact(code, data, reply, flags);
-		}
-	};
-	static public final String TAG = "CupsPrintService";
+	public static final String TAG = "CupsPrintService";
 }

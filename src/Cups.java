@@ -85,7 +85,7 @@ import android.os.StatFs;
 
 public class Cups
 {
-	static String IMG = "img";
+	static String IMG = "/img";
 	static String PROOT = "./proot.sh";
 	static String CUPSD = "/usr/sbin/cupsd";
 	static String LP = "/usr/bin/lp";
@@ -97,12 +97,7 @@ public class Cups
 
 	static File chrootPath(Context p)
 	{
-		return new File(p.getFilesDir(), IMG);
-	}
-
-	synchronized static boolean isInstalled(Context p)
-	{
-		return new File(p.getFilesDir().getAbsolutePath() + "/" + IMG + CUPSD).exists();
+		return new File(p.getFilesDir().getAbsolutePath() + IMG);
 	}
 
 	synchronized static boolean isRunning(Context p)
@@ -177,7 +172,7 @@ public class Cups
 		try
 		{
 			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(
-				chrootPath(p).getAbsolutePath() + "/" + IMG + "/usr/share/cups/ppdc/media.defs")));
+				chrootPath(p).getAbsolutePath() + IMG + "/usr/share/cups/ppdc/media.defs")));
 			String line;
 			while((line = in.readLine()) != null)
 			{
@@ -231,7 +226,7 @@ public class Cups
 
 	synchronized static void startCupsDaemon(Context p)
 	{
-		if (cupsd != null)
+		if (cupsd != null && isDaemonRunning(p))
 			return;
 		restartCupsDaemon(p);
 	}
@@ -248,13 +243,44 @@ public class Cups
 	{
 		if (cupsd != null)
 			cupsd.destroy();
-		cupsd = Runtime.getRuntime().exec(new String[] {PROOT, CUPSD, "-f"}, null, chrootPath(p));
+		cupsd = null;
+		try
+		{
+			cupsd = Runtime.getRuntime().exec(new String[] {PROOT, CUPSD, "-f"}, null, chrootPath(p));
+			for (int i = 0; i < 10 && !isDaemonRunning(p); i++)
+			{
+				try
+				{
+					Thread.sleep(200);
+				}
+				catch(InterruptedException e)
+				{
+				}
+			}
+		}
+		catch(IOException e)
+		{
+		}
+	}
+
+	static boolean isDaemonRunning(Context p)
+	{
+		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-r"}, chrootPath(p));
+		if (pp.status != 0 || pp.out.length < 1 || pp.out[0].indexOf("scheduler is running") != 0)
+			return false;
+		return true;
+	}
+
+	synchronized static boolean isInstalled(Context p)
+	{
+		return new File(p.getFilesDir().getAbsolutePath() + IMG + CUPSD).exists();
 	}
 
 	synchronized static void unpackData(final MainActivity p, final TextView text)
 	{
 		if (isInstalled(p))
 		{
+			startCupsDaemon(p);
 			p.enableSettingsButton();
 			return;
 		}
@@ -295,11 +321,11 @@ public class Cups
 				Log.i(TAG, "No data archive in assets, trying OBB data");
 				new Proc(new String[] {busybox, "tar", "xJf",
 							Environment.getExternalStorageDirectory().getAbsolutePath() +
-							"/Android/obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb"});
+							"/Android/obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb"}, p.getFilesDir());
 			}
 
-			new Proc(new String[] {busybox, "cp", "-a", "img-" + android.os.Build.CPU_ABI + "/.", "img/"});
-			new Proc(new String[] {busybox, "rm", "-rf", "img-armeabi-v7a", "img-x86"});
+			new Proc(new String[] {busybox, "cp", "-a", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
+			new Proc(new String[] {busybox, "rm", "-rf", "img-armeabi-v7a", "img-x86"}, p.getFilesDir());
 			stream = p.getAssets().open("cupsd.conf");
 			out = new FileOutputStream(new File(chrootPath(p), "etc/cups/cupsd.conf"));
 			copyStream(stream, out);
