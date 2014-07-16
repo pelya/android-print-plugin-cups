@@ -31,10 +31,9 @@
 	<string name="yes">Yes</string>
 	<string name="no">No</string>
 
-	<string name="not_implemented_yet">This dialog is not implemented yet.\n
-								But you can do it yourself - open this link and grab the source code.</string>
+	<string name="not_implemented_yet">This dialog is not implemented yet. But you can do it yourself - go to my site and grab the source code.</string>
 
-	<string name="sources_url">https://github.com/pelya/print-plugin-cups</string>
+	<string name="sources_url">https://github.com/pelya/android-print-plugin-cups</string>
 
 	<string name="add_printers">You can add printers now.</string>
 	<string name="settings_button">Configure printers</string>

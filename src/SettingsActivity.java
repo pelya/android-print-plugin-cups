@@ -96,7 +96,7 @@ public class SettingsActivity extends Activity
 		text = new TextView(this);
 		text.setMaxLines(100);
 		text.setText(R.string.init);
-		text.setText(getResources().getString(R.string.sources_url));
+		text.setText(getResources().getString(R.string.not_implemented_yet));
 		text.setTextSize(20);
 		text.setPadding(20, 20, 20, 50);
 		text.setAutoLinkMask(Linkify.WEB_URLS);
