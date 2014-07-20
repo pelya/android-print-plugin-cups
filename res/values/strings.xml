@@ -21,6 +21,7 @@
 	<string name="cancel">Cancel</string>
 
 	<string name="none">None</string>
+	<string name="error">Error</string>
 
 	<string name="not_enough_ram">Not enough storage space</string>
 	<string name="not_enough_ram_size">This app needs %1$d Mb storage, your device has %2$d Mb</string>
@@ -35,7 +36,38 @@
 
 	<string name="sources_url">https://github.com/pelya/android-print-plugin-cups</string>
 
-	<string name="add_printers">You can add printers now.</string>
-	<string name="settings_button">Configure printers</string>
+	<string name="service_running">Print service is running</string>
+	<string name="enable_plugin">Please enable this plugin in system settings</string>
+	<string name="enable_plugin_button">Enable plugin in system settings</string>
+	<string name="settings_button">System settings</string>
+	<string name="add_printer_button">Add printer</string>
+	<string name="delete_printer_button">Delete printer</string>
+	<string name="view_network_button">View network shares</string>
+	<string name="view_network_button_scanning">Scanning network...</string>
+	<string name="view_network_button_scan_again">Scan again</string>
+	<string name="advanced_interface_button">Advanced interface</string>
+
+	<string name="name_desc">Printer description</string>
+	<string name="name_hint">Printer in kitchen</string>
+	<string name="server_desc">Server name or IP address</string>
+	<string name="server_hint">192.168.0.100</string>
+	<string name="printer_desc">Printer share on server</string>
+	<string name="printer_hint">printer1</string>
+	<string name="model_desc">Printer model</string>
+	<string name="model_hint">Type any part of printer model</string>
+	<string name="select_printer_model">Select printer model</string>
+	<string name="model_button_search">Search for printer model</string>
+	<string name="model_button_type">Type few letters of printer model or manufacturer</string>
+	<string name="model_button_clear">Select different model</string>
+	<string name="model_button_reading">Reading model database, please wait</string>
+	<string name="no_models_found">No such models found</string>
+	<string name="domain_desc">Workgroup or domain</string>
+	<string name="domain_hint">workgroup</string>
+	<string name="user_desc">Username or login</string>
+	<string name="user_hint">john.smith</string>
+	<string name="password_desc">Password</string>
+	<string name="password_hint">No spaces allowed in password</string>
+
+	<string name="error_empty_fields">Please specify printer description, server, share, and model</string>
 
 </resources>

@@ -78,11 +78,12 @@ import android.util.Log;
 import android.view.Surface;
 import android.app.ProgressDialog;
 import java.util.ArrayList;
+import java.util.Arrays;
+
 
 public class Proc
 {
-	public String out[] = new String[0];
-	public String err[] = new String[0];
+	public String[] out = new String[0];
 	public int status = 0;
 
 	public Proc(String cmd, File dir)
@@ -101,10 +102,7 @@ public class Proc
 
 	public Proc(String[] cmd, File dir)
 	{
-		StringBuilder sb = new StringBuilder();
-		for (String s: cmd)
-			sb.append(s + " ");
-		Log.d(TAG, "Exec: '" + sb.toString() + "' inside " + dir);
+		Log.d(TAG, "Exec: '" + Arrays.toString(cmd) + "' inside " + dir);
 		status = -1;
 		try
 		{
@@ -118,18 +116,22 @@ public class Proc
 
 	void waitFor(final Process p)
 	{
+		final ArrayList<String> outArr = new ArrayList<String>();
+
 		Thread tout = new Thread(new Runnable()
 		{
 			public void run()
 			{
 				BufferedReader bout = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				String line;
-				ArrayList<String> sb = new ArrayList<String>();
 				try
 				{
 					while ((line = bout.readLine()) != null)
 					{
-						sb.add(line);
+						synchronized(outArr)
+						{
+							outArr.add(line);
+						}
 						Log.d(TAG, "Exec: out: " + line);
 					}
 					bout.close();
@@ -137,7 +139,6 @@ public class Proc
 				catch(IOException e)
 				{
 				}
-				out = sb.toArray(out);
 			}
 		});
 		tout.start();
@@ -147,12 +148,14 @@ public class Proc
 			{
 				BufferedReader berr = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				String line;
-				ArrayList<String> sb = new ArrayList<String>();
 				try
 				{
 					while((line = berr.readLine()) != null)
 					{
-						sb.add(line);
+						synchronized(outArr)
+						{
+							outArr.add(line);
+						}
 						Log.d(TAG, "Exec: err: " + line);
 					}
 					berr.close();
@@ -160,7 +163,6 @@ public class Proc
 				catch(IOException e)
 				{
 				}
-				err = sb.toArray(err);
 			}
 		});
 		terr.start();
@@ -173,6 +175,7 @@ public class Proc
 		catch(InterruptedException e)
 		{
 		}
+		out = outArr.toArray(out);
 		Log.d(TAG, "Exec: exit status: " + status);
 		p.destroy();
 	}

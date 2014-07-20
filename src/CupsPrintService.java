@@ -85,6 +85,22 @@ import java.util.*;
 
 public class CupsPrintService extends PrintService
 {
+	public static boolean pluginEnabled = false;
+
+	@Override public void onCreate()
+	{
+		Log.d(TAG, "onCreate()");
+		super.onCreate();
+		pluginEnabled = true;
+	}
+
+	@Override public void onDestroy()
+	{
+		Log.d(TAG, "onDestroy()");
+		super.onDestroy();
+		pluginEnabled = false;
+	}
+
 	@Override public void onConnected()
 	{
 		Log.d(TAG, "onConnected()");
@@ -122,85 +138,84 @@ public class CupsPrintService extends PrintService
 			for (String pr: printers)
 			{
 				PrinterId id = generatePrinterId(pr);
-				PrinterInfo.Builder pi = new PrinterInfo.Builder(id, pr, Cups.getPrinterStatus(CupsPrintService.this, pr));
-				pi.setDescription("");
-				pi.setName(pr);
-				/*
-				PrinterCapabilitiesInfo.Builder pc = new PrinterCapabilitiesInfo.Builder(id);
-				Map<String, String[]> options = Cups.getPrinterOptions(CupsPrintService.this, pr);
-				if (options.containsKey("PageSize"))
-				{
-					String pagesize[] = options.get("PageSize");
-					if (pagesize.length > 0 && Cups.getMediaSize(CupsPrintService.this, pagesize[0]) != null)
-						pc.addMediaSize(Cups.getMediaSize(CupsPrintService.this, pagesize[0]), true);
-					for (int i = 1; i < pagesize.length; i++)
-						if (Cups.getMediaSize(CupsPrintService.this, pagesize[i]) != null)
-							pc.addMediaSize(Cups.getMediaSize(CupsPrintService.this, pagesize[i]), false);
-				}
-				if (options.containsKey("Resolution"))
-				{
-					String res[] = options.get("Resolution");
-					if (res.length > 0)
-						pc.addResolution(Cups.getResolution(res[0]), true);
-					for (int i = 1; i < res.length; i++)
-						pc.addResolution(Cups.getResolution(res[i]), false);
-				}
-				pi.setCapabilities(pc.build());
-				*/
-				ret.add(pi.build());
+				ret.add(getPrinterInfo(id));
 			}
 			addPrinters(ret);
 		}
 		public void onStartPrinterStateTracking(PrinterId id)
 		{
+			Log.d(TAG, "onStartPrinterTracking(): " + id.getLocalId());
 			ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
+			ret.add(getPrinterInfo(id));
+			addPrinters(ret);
+		}
+		public void onStopPrinterDiscovery()
+		{
+			Log.d(TAG, "onStopPrinterDiscovery()");
+		}
+		public void onStopPrinterStateTracking(PrinterId id)
+		{
+			Log.d(TAG, "onStopPrinterStateTracking(): " + id.getLocalId());
+		}
+		public void onValidatePrinters(List<PrinterId> printerIds)
+		{
+			ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
+			for (PrinterId id: printerIds)
+			{
+				Log.d(TAG, "onValidatePrinters(): " + id.getLocalId());
+				ret.add(getPrinterInfo(id));
+			}
+			addPrinters(ret);
+		}
+
+		private PrinterInfo getPrinterInfo(PrinterId id)
+		{
 			String pr = id.getLocalId();
-			Log.d(TAG, "onStartPrinterTracking(): " + id);
 			PrinterInfo.Builder pi = new PrinterInfo.Builder(id, pr, Cups.getPrinterStatus(CupsPrintService.this, pr));
 			pi.setDescription("");
 			pi.setName(pr);
 			PrinterCapabilitiesInfo.Builder pc = new PrinterCapabilitiesInfo.Builder(id);
 			Map<String, String[]> options = Cups.getPrinterOptions(CupsPrintService.this, pr);
+			boolean hasPageSize = false;
 			if (options.containsKey("PageSize"))
 			{
 				String pagesize[] = options.get("PageSize");
 				if (pagesize.length > 0 && Cups.getMediaSize(CupsPrintService.this, pagesize[0]) != null)
+				{
 					pc.addMediaSize(Cups.getMediaSize(CupsPrintService.this, pagesize[0]), true);
+					hasPageSize = true;
+				}
 				for (int i = 1; i < pagesize.length; i++)
 					if (Cups.getMediaSize(CupsPrintService.this, pagesize[i]) != null)
 						pc.addMediaSize(Cups.getMediaSize(CupsPrintService.this, pagesize[i]), false);
 			}
+			if (!hasPageSize)
+			{
+				// Just so it won't crash
+				pc.addMediaSize(PrintAttributes.MediaSize.ISO_A4, true);
+				pc.addMediaSize(PrintAttributes.MediaSize.NA_LETTER, false);
+			}
+			boolean hasResolution = false;
 			if (options.containsKey("Resolution"))
 			{
 				String res[] = options.get("Resolution");
 				if (res.length > 0)
+				{
 					pc.addResolution(Cups.getResolution(res[0]), true);
+					hasResolution = true;
+				}
 				for (int i = 1; i < res.length; i++)
 					pc.addResolution(Cups.getResolution(res[i]), false);
 			}
-			pi.setCapabilities(pc.build());
-			ret.add(pi.build());
-			addPrinters(ret);
-		}
-		public void onStopPrinterDiscovery()
-		{
-			// TODO: implement that
-		}
-		public void onStopPrinterStateTracking(PrinterId printerId)
-		{
-			// TODO: implement that
-		}
-		public void onValidatePrinters(List<PrinterId> printerIds)
-		{
-			Log.d(TAG, "onValidatePrinters()");
-			ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
-			for (PrinterId id: printerIds)
+			if (!hasResolution)
 			{
-				String pr = id.getLocalId();
-				PrinterInfo.Builder pi = new PrinterInfo.Builder(id, pr, Cups.getPrinterStatus(CupsPrintService.this, pr));
-				ret.add(pi.build());
+				// Just so it won't crash
+				pc.addResolution(new PrintAttributes.Resolution("Default", "Default", 300, 300), true);
 			}
-			addPrinters(ret);
+			pc.setColorModes(PrintAttributes.COLOR_MODE_COLOR | PrintAttributes.COLOR_MODE_MONOCHROME, PrintAttributes.COLOR_MODE_COLOR);
+			pc.setMinMargins(PrintAttributes.Margins.NO_MARGINS);
+			pi.setCapabilities(pc.build());
+			return pi.build();
 		}
 
 		public static final String TAG = "CupsPrinterDiscoverySession";

@@ -19,38 +19,15 @@
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
-		<activity android:name="org.cups.android.SettingsActivity"
-				  android:label="@string/app_name"
-				  android:exported="true"
-		>
-			<!--
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
-			-->
-		</activity>
 		<activity android:name="org.cups.android.AdvancedPrintOptionsActivity"
 				  android:label="@string/app_name"
 				  android:exported="true"
 		>
-			<!--
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
-			-->
 		</activity>
-		<activity android:name="org.cups.android.AddPrintersActivity"
+		<activity android:name="org.cups.android.AddPrinterActivity"
 				  android:label="@string/app_name"
 				  android:exported="true"
 		>
-			<!--
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
-			-->
 		</activity>
 
 		<service android:name="org.cups.android.CupsPrintService"

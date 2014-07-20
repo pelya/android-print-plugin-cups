@@ -77,12 +77,15 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.Surface;
 import android.app.ProgressDialog;
-import android.text.util.Linkify;
+import android.net.Uri;
+
 
 public class AdvancedPrintOptionsActivity extends Activity
 {
 	private LinearLayout layout = null;
 	private TextView text = null;
+	private Button sourcesUrl = null;
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -99,8 +102,20 @@ public class AdvancedPrintOptionsActivity extends Activity
 		text.setText(getResources().getString(R.string.not_implemented_yet));
 		text.setTextSize(20);
 		text.setPadding(20, 20, 20, 50);
-		text.setAutoLinkMask(Linkify.WEB_URLS);
 		layout.addView(text);
+		
+		sourcesUrl = new Button(this);
+		sourcesUrl.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		sourcesUrl.setText(getResources().getString(R.string.sources_url));
+		sourcesUrl.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(getResources().getString(R.string.sources_url))));
+			}
+		});
+		layout.addView(sourcesUrl);
+
 		setContentView(layout);
 	}
 

@@ -79,6 +79,10 @@ import android.view.Surface;
 import android.app.ProgressDialog;
 import android.text.util.Linkify;
 import android.provider.Settings;
+import android.app.AlertDialog;
+import android.widget.ScrollView;
+import android.content.DialogInterface;
+import android.net.Uri;
 
 
 public class MainActivity extends Activity
@@ -86,12 +90,29 @@ public class MainActivity extends Activity
 	private LinearLayout layout = null;
 	private TextView text = null;
 	private Button openSettings = null;
+	private Button addPrinter = null;
+	private Button deletePrinter = null;
+	private Button viewNetwork = null;
+	private String[] networkTree = null;
+	private Button advancedInterface = null;
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState)
+	@Override protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate");
+		reinitUI();
+		Cups.unpackData(this, text);
+	}
+
+	@Override protected void onStart()
+	{
+		super.onStart();
+		if (!Cups.unpacking)
+			enableSettingsButton();
+	}
+
+	void reinitUI()
+	{
 		layout = new LinearLayout(this);
 		layout.setOrientation(LinearLayout.VERTICAL);
 		layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
@@ -105,13 +126,6 @@ public class MainActivity extends Activity
 		text.setAutoLinkMask(Linkify.WEB_URLS);
 		layout.addView(text);
 		setContentView(layout);
-		new Thread(new Runnable()
-		{
-			public void run()
-			{
-				Cups.unpackData(MainActivity.this, text);
-			}
-		}).start();
 	}
 
 	void enableSettingsButton()
@@ -120,19 +134,191 @@ public class MainActivity extends Activity
 		{
 			public void run()
 			{
-				openSettings = new Button(MainActivity.this);
-				openSettings.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-				openSettings.setText(getResources().getString(R.string.settings_button));
-				openSettings.setOnClickListener(new View.OnClickListener()
+				reinitUI();
+				enableSettingsButtonPriv();
+			}
+		});
+	}
+
+	private void enableSettingsButtonPriv()
+	{
+		text.setText(CupsPrintService.pluginEnabled ? R.string.service_running : R.string.enable_plugin);
+		openSettings = new Button(this);
+		openSettings.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		openSettings.setText(getResources().getString(CupsPrintService.pluginEnabled ? R.string.settings_button : R.string.enable_plugin_button));
+		openSettings.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				MainActivity.this.startActivity(new Intent(Settings.ACTION_PRINT_SETTINGS));
+			}
+		});
+		layout.addView(openSettings);
+
+		addPrinter = new Button(this);
+		addPrinter.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		addPrinter.setText(getResources().getString(R.string.add_printer_button));
+		addPrinter.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				MainActivity.this.startActivity(new Intent(MainActivity.this, AddPrinterActivity.class));
+			}
+		});
+		layout.addView(addPrinter);
+
+		deletePrinter = new Button(this);
+		deletePrinter.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		deletePrinter.setText(getResources().getString(R.string.delete_printer_button));
+		deletePrinter.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				final String[] printers = Cups.getPrinters(MainActivity.this);
+				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				builder.setTitle(R.string.delete_printer_button);
+				builder.setItems(printers, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, final int which)
+					{
+						dialog.dismiss();
+						AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+						builder.setTitle(getResources().getString(R.string.delete_printer_button) + " " + printers[which]);
+						builder.setPositiveButton(R.string.delete_printer_button, new DialogInterface.OnClickListener()
+						{
+							public void onClick(DialogInterface d, int s)
+							{
+								Cups.deletePrinter(MainActivity.this, printers[which]);
+								d.dismiss();
+							}
+						});
+						builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener()
+						{
+							public void onClick(DialogInterface d, int s)
+							{
+								d.dismiss();
+							}
+						});
+						AlertDialog alert = builder.create();
+						alert.setOwnerActivity(MainActivity.this);
+						alert.show();
+					}
+				});
+				builder.setPositiveButton(R.string.cancel, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface d, int s)
+					{
+						d.dismiss();
+					}
+				});
+				AlertDialog alert = builder.create();
+				alert.setOwnerActivity(MainActivity.this);
+				alert.show();
+			}
+		});
+		layout.addView(deletePrinter);
+
+		viewNetwork = new Button(this);
+		viewNetwork.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		viewNetwork.setText(getResources().getString(R.string.view_network_button));
+		viewNetwork.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				String[] networkTreeCopy = networkTree;
+				TextView text = new TextView(MainActivity.this);
+				String s = "No network shares found";
+				if (networkTreeCopy != null && networkTreeCopy.length > 0)
+				{
+					s = "";
+					for (String ss: networkTreeCopy)
+						s = s + ss + "\n";
+				}
+				text.setText(s);
+				text.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+				text.setPadding(0, 5, 0, 5);
+				text.setTextSize(20.0f);
+				text.setGravity(Gravity.LEFT);
+				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				ScrollView scroll = new ScrollView(MainActivity.this);
+				scroll.addView(text, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+				Button ok = new Button(MainActivity.this);
+				final AlertDialog alertDismiss[] = new AlertDialog[1];
+				ok.setOnClickListener(new View.OnClickListener()
 				{
 					public void onClick(View v)
 					{
-						MainActivity.this.startActivity(new Intent(Settings.ACTION_PRINT_SETTINGS));
+						alertDismiss[0].dismiss();
 					}
 				});
-				layout.addView(openSettings);
+				ok.setText(R.string.ok);
+				Button scanAgain = new Button(MainActivity.this);
+				scanAgain.setOnClickListener(new View.OnClickListener()
+				{
+					public void onClick(View v)
+					{
+						alertDismiss[0].cancel();
+						updateNetworkTree();
+					}
+				});
+				scanAgain.setText(R.string.view_network_button_scan_again);
+				LinearLayout layout = new LinearLayout(MainActivity.this);
+				layout.setOrientation(LinearLayout.VERTICAL);
+				layout.addView(scroll);
+				layout.addView(ok);
+				layout.addView(scanAgain);
+				builder.setView(layout);
+				AlertDialog alert = builder.create();
+				alertDismiss[0] = alert;
+				alert.setOwnerActivity(MainActivity.this);
+				alert.show();
 			}
 		});
+		layout.addView(viewNetwork);
+		updateNetworkTree();
+
+		advancedInterface = new Button(this);
+		advancedInterface.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		advancedInterface.setText(getResources().getString(R.string.advanced_interface_button));
+		advancedInterface.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://127.0.0.1:6631/")));
+			}
+		});
+		layout.addView(advancedInterface);
+	}
+
+	public void updateNetworkTree()
+	{
+		new Thread(new Runnable()
+		{
+			public void run()
+			{
+				runOnUiThread(new Runnable()
+				{
+					public void run()
+					{
+						if (viewNetwork == null)
+							return;
+						viewNetwork.setEnabled(false);
+						viewNetwork.setText(getResources().getString(R.string.view_network_button_scanning));
+					}
+				});
+				networkTree = Cups.getNetworkTree(MainActivity.this);
+				runOnUiThread(new Runnable()
+				{
+					public void run()
+					{
+						if (viewNetwork == null)
+							return;
+						viewNetwork.setEnabled(true);
+						viewNetwork.setText(getResources().getString(R.string.view_network_button));
+					}
+				});
+			}
+		}).start();
 	}
 
 	static public final String TAG = "MainActivity";

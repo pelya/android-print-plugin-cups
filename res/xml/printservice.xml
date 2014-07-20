@@ -2,7 +2,7 @@
 
 <print-service xmlns:android="http://schemas.android.com/apk/res/android"
 	android:vendor="CUPS"
-	android:addPrintersActivity="org.cups.android.AddPrintersActivity"
+	android:addPrintersActivity="org.cups.android.AddPrinterActivity"
 	android:advancedPrintOptionsActivity="org.cups.android.AdvancedPrintOptionsActivity"
-	android:settingsActivity="org.cups.android.SettingsActivity"
+	android:settingsActivity="org.cups.android.MainActivity"
 />

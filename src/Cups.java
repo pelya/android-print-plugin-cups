@@ -148,7 +148,7 @@ public class Cups
 					String dd = vv[i].substring(1);
 					vv[i] = vv[0];
 					vv[0] = dd;
-					Log.d(TAG, "Printer " + printer + " option " + k + " default value " + dd);
+					//Log.d(TAG, "Printer " + printer + " option " + k + " default value " + dd);
 					break;
 				}
 			}
@@ -172,20 +172,23 @@ public class Cups
 		try
 		{
 			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(
-				chrootPath(p).getAbsolutePath() + IMG + "/usr/share/cups/ppdc/media.defs")));
+				chrootPath(p).getAbsolutePath() + "/usr/share/cups/ppdc/media.defs")));
 			String line;
 			while((line = in.readLine()) != null)
 			{
 				if (!line.startsWith("#media \"") || line.indexOf("/") == -1)
 					continue;
+				line = line.replace("\\\"", "”");
 				int slash = line.indexOf("/");
 				String name = line.substring("#media \"".length(), slash);
 				String descr = line.substring(slash + 1, line.indexOf("\"", slash + 1));
-				String sizes[] = line.substring(line.indexOf("\"", slash + 1)).split("\\s+");
+				String sizes[] = line.substring(line.indexOf("\"", slash + 1) + 1).trim().split("\\s+");
+				//Log.d(TAG, "fillMediaSizes: dimensions: " + Arrays.toString(sizes) + " for " + name);
 				if (sizes.length < 2)
 					continue;
-				int w = Integer.parseInt(sizes[0]);
-				int h = Integer.parseInt(sizes[1]);
+				final double coeff = (2.83472057075 + 2.83431455004) / 2.0; // This file has some wacky units, not millimeters and not inches
+				int w = (int)(Integer.parseInt(sizes[0]) / coeff);
+				int h = (int)(Integer.parseInt(sizes[1]) / coeff);
 				Log.d(TAG, "fillMediaSizes: " + name + " desc '" + descr + "' size " + w + "x" + h);
 				mediaSizes.put(name, new PrintAttributes.MediaSize(name, descr, w, h));
 			}
@@ -207,7 +210,31 @@ public class Cups
 		return new PrintAttributes.Resolution(s, s, Integer.parseInt(rr[0]), Integer.parseInt(rr[1]));
 	}
 
-	synchronized static void addWindowsSharedPrinter(Context p, String model, String host, String printer, String workgroup, String username, String password)
+	synchronized static void addPrinter(Context p, String name, String host, String printer, String model, String workgroup, String username, String password)
+	{
+		name = name.trim().replaceAll("[ 	/#]", "-");
+		host = host.trim();
+		printer = printer.trim();
+		model = model.trim();
+		workgroup = workgroup.trim();
+		username = username.trim();
+		password = password.trim();
+		String url = "smb://";
+		if (username.length() > 0 && password.length() > 0)
+			url = url + username + ":" + password + "@";
+		if (workgroup.length() > 0)
+			url = url + workgroup + "/";
+		url = url + host + "/";
+		url = url + printer;
+		new Proc(new String[] {PROOT, LPADMIN, "-p", name, "-v", url, "-m", model, "-E"}, chrootPath(p));
+	}
+
+	synchronized static void deletePrinter(Context p, String name)
+	{
+		new Proc(new String[] {PROOT, LPADMIN, "-x", name}, chrootPath(p));
+	}
+
+	synchronized static void deletePrinter(Context p, String host, String printer, String model, String workgroup, String username, String password)
 	{
 		String url = "smb://";
 		if (username.length() > 0 && password.length() > 0)
@@ -219,9 +246,31 @@ public class Cups
 		new Proc(new String[] {PROOT, LPADMIN, "-p", url, "-m", model}, chrootPath(p));
 	}
 
-	synchronized static String[] getPrinterModels(Context p)
+	synchronized static Map<String, String> getPrinterModels(Context p)
 	{
-		return new Proc(new String[] {PROOT, LPINFO, "-m"}, chrootPath(p)).out;
+		final String modelsFileName = "printer-models.txt";
+		File modelsFile = new File(chrootPath(p), modelsFileName);
+		if (!modelsFile.exists())
+		{
+			Proc pp = new Proc(new String[] {PROOT, "/bin/sh", "-c", LPINFO + " -m > " + modelsFileName}, chrootPath(p));
+		}
+		TreeMap<String, String> models = new TreeMap<String, String>();
+		try
+		{
+			BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(modelsFile)));
+			String s;
+			while ((s = in.readLine()) != null)
+			{
+				if (s.indexOf(" ") == -1)
+					continue;
+				models.put(s.substring(s.indexOf(" ") + 1), s.substring(0, s.indexOf(" ")));
+			}
+		}
+		catch(Exception e)
+		{
+			Log.i(TAG, "Cannot read " + modelsFileName + ": " + e.toString());
+		}
+		return models;
 	}
 
 	synchronized static void startCupsDaemon(Context p)
@@ -282,12 +331,31 @@ public class Cups
 		return new File(p.getFilesDir().getAbsolutePath() + IMG + CUPSD).exists();
 	}
 
+	static String[] getNetworkTree(Context p)
+	{
+		return new Proc(new String[] {PROOT, "/usr/bin/smbtree", "-N", }, chrootPath(p)).out;
+	}
+
+	static boolean unpacking = false;
+
 	synchronized static void unpackData(final MainActivity p, final TextView text)
+	{
+		unpacking = true;
+		new Thread(new Runnable()
+		{
+			public void run()
+			{
+				unpackDataThread(p, text);
+			}
+		}).start();
+	}
+
+	synchronized static void unpackDataThread(final MainActivity p, final TextView text)
 	{
 		if (isInstalled(p))
 		{
+			unpacking = false;
 			startCupsDaemon(p);
-			setText(p, text, p.getResources().getString(R.string.add_printers));
 			p.enableSettingsButton();
 			return;
 		}
@@ -298,7 +366,7 @@ public class Cups
 
 		StatFs storage = new StatFs(p.getFilesDir().getPath());
 		long avail = (long)storage.getAvailableBlocks() * storage.getBlockSize() / 1024 / 1024;
-		long needed = 360;
+		long needed = 500;
 		if (avail < needed)
 		{
 			setText(p, text, p.getResources().getString(R.string.not_enough_space, needed, avail));
@@ -329,8 +397,9 @@ public class Cups
 				Log.i(TAG, "Error unpacking data from assets: " + e.toString());
 				Log.i(TAG, "No data archive in assets, trying OBB data");
 				new Proc(new String[] {busybox, "tar", "xJf",
-							Environment.getExternalStorageDirectory().getAbsolutePath() +
-							"/Android/obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb"}, p.getFilesDir());
+							new File(p.getExternalFilesDir(null).getParentFile().getParentFile().getParentFile(),
+							"obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb").getAbsolutePath()},
+							p.getFilesDir());
 			}
 
 			new Proc(new String[] {busybox, "cp", "-af", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
@@ -344,11 +413,11 @@ public class Cups
 		catch( java.io.IOException e )
 		{
 			Log.i(TAG, "Error extracting data: " + e.toString());
-			setText(p, text, p.getResources().getString(R.string.error_extracting) + e.toString());
+			setText(p, text, p.getResources().getString(R.string.error_extracting) + " " + e.toString());
 			return;
 		}
 
-		setText(p, text, p.getResources().getString(R.string.add_printers));
+		unpacking = false;
 		p.enableSettingsButton();
 		startCupsDaemon(p);
 	}
