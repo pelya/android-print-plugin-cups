@@ -291,20 +291,14 @@ public class MainActivity extends Activity
 
 	public void updateNetworkTree()
 	{
+		if (viewNetwork == null)
+			return;
+		viewNetwork.setEnabled(false);
+		viewNetwork.setText(getResources().getString(R.string.view_network_button_scanning));
 		new Thread(new Runnable()
 		{
 			public void run()
 			{
-				runOnUiThread(new Runnable()
-				{
-					public void run()
-					{
-						if (viewNetwork == null)
-							return;
-						viewNetwork.setEnabled(false);
-						viewNetwork.setText(getResources().getString(R.string.view_network_button_scanning));
-					}
-				});
 				networkTree = Cups.getNetworkTree(MainActivity.this);
 				runOnUiThread(new Runnable()
 				{

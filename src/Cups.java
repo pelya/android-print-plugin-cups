@@ -368,6 +368,7 @@ public class Cups
 		StatFs storage = new StatFs(p.getFilesDir().getPath());
 		long avail = (long)storage.getAvailableBlocks() * storage.getBlockSize() / 1024 / 1024;
 		long needed = 500;
+		Log.i(TAG, "Available free space: " + avail + " Mb required: " + needed + " Mb");
 		if (avail < needed)
 		{
 			setText(p, text, p.getResources().getString(R.string.not_enough_space, needed, avail));
@@ -399,9 +400,12 @@ public class Cups
 				Log.i(TAG, "No data archive in assets, trying OBB data");
 				try
 				{
+					File obbFile = new File(p.getExternalFilesDir(null).getParentFile().getParentFile().getParentFile(),
+												"obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb");
+					if (!obbFile.exists())
+						throw new IOException("Cannot find data file: " + obbFile.getAbsolutePath());
 					new Proc(new String[] {busybox, "tar", "xJf",
-								new File(p.getExternalFilesDir(null).getParentFile().getParentFile().getParentFile(),
-								"obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb").getAbsolutePath()},
+								obbFile.getAbsolutePath()},
 								p.getFilesDir());
 				}
 				catch(Exception ee)
@@ -409,7 +413,7 @@ public class Cups
 					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/dist-cups-wheezy.tar.xz/download";
 					Log.i(TAG, "Error unpacking data from OBB: " + e.toString());
 					Log.i(TAG, "No data archive in OBB, downloading from web: " + ARCHIVE_URL);
-					setText(p, text, p.getResources().getString(R.string.downloading_web) + " " + e.toString());
+					setText(p, text, p.getResources().getString(R.string.downloading_web));
 					URL link = new URL(ARCHIVE_URL);
 					InputStream download = new BufferedInputStream(link.openStream());
 					Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());

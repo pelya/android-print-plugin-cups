@@ -81,6 +81,8 @@ import java.util.ArrayList;
 import android.print.*;
 import android.printservice.*;
 import java.util.*;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 
 public class CupsPrintService extends PrintService
@@ -124,56 +126,138 @@ public class CupsPrintService extends PrintService
 		Cups.stopCupsDaemon(this);
 	}
 
-	class CupsPrinterDiscoverySession extends PrinterDiscoverySession
+	class CupsPrinterDiscoverySession extends PrinterDiscoverySession implements Runnable
 	{
-		public void onDestroy()
+		private boolean shouldExit = false;
+		private boolean startDiscovery = false;
+		private PrinterId[] discoveredPrinters = null;
+		private HashSet<PrinterId> trackedPrinters = new HashSet<PrinterId>();
+		private Semaphore sem = new Semaphore(0);
+		private Handler handler = null;
+
+		CupsPrinterDiscoverySession()
+		{
+			handler = new Handler(CupsPrintService.this.getMainLooper());
+			new Thread(this).start();
+		}
+
+		public synchronized void onDestroy()
 		{
 			Log.d(TAG, "onDestroy()");
+			shouldExit = true;
+			sem.release();
 		}
-		public void onStartPrinterDiscovery(List<PrinterId> priorityList)
+		public synchronized void onStartPrinterDiscovery(List<PrinterId> priorityList)
 		{
 			Log.d(TAG, "onStartPrinterDiscovery()");
-			ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
+			startDiscovery = true;
 			String[] printers = Cups.getPrinters(CupsPrintService.this);
-			for (String pr: printers)
+			discoveredPrinters = new PrinterId[printers.length];
+			for (int i = 0; i < printers.length; i++)
 			{
-				PrinterId id = generatePrinterId(pr);
-				ret.add(getPrinterInfo(id));
+				discoveredPrinters[i] = generatePrinterId(printers[i]);
 			}
-			addPrinters(ret);
+			sem.release();
 		}
-		public void onStartPrinterStateTracking(PrinterId id)
-		{
-			Log.d(TAG, "onStartPrinterTracking(): " + id.getLocalId());
-			ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
-			ret.add(getPrinterInfo(id));
-			addPrinters(ret);
-		}
-		public void onStopPrinterDiscovery()
+		public synchronized void onStopPrinterDiscovery()
 		{
 			Log.d(TAG, "onStopPrinterDiscovery()");
+			startDiscovery = false;
 		}
-		public void onStopPrinterStateTracking(PrinterId id)
+		public synchronized void onStartPrinterStateTracking(PrinterId id)
+		{
+			Log.d(TAG, "onStartPrinterTracking(): " + id.getLocalId());
+			trackedPrinters.add(id);
+			sem.release();
+		}
+		public synchronized void onStopPrinterStateTracking(PrinterId id)
 		{
 			Log.d(TAG, "onStopPrinterStateTracking(): " + id.getLocalId());
+			trackedPrinters.remove(id);
 		}
-		public void onValidatePrinters(List<PrinterId> printerIds)
+		public synchronized void onValidatePrinters(List<PrinterId> printerIds)
 		{
+			Log.d(TAG, "onValidatePrinters()");
 			ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
 			for (PrinterId id: printerIds)
 			{
 				Log.d(TAG, "onValidatePrinters(): " + id.getLocalId());
-				ret.add(getPrinterInfo(id));
+				ret.add(getPrinterInfoBasic(id));
 			}
 			addPrinters(ret);
+			Log.d(TAG, "onValidatePrinters(): exit");
 		}
 
-		private PrinterInfo getPrinterInfo(PrinterId id)
+		public void run()
+		{
+			while (true)
+			{
+				synchronized(this)
+				{
+					if (shouldExit)
+						return;
+					if (startDiscovery)
+					{
+						final ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
+						String[] printers = Cups.getPrinters(CupsPrintService.this);
+						for (PrinterId id: discoveredPrinters)
+						{
+							ret.add(getPrinterInfoBasic(id));
+						}
+						Log.d(TAG, "onStartPrinterDiscovery(): finishing from discover thread");
+						handler.post(new Runnable()
+						{
+							public void run()
+							{
+								addPrinters(ret);
+							}
+						});
+						discoveredPrinters = null;
+						startDiscovery = false;
+					}
+					if (!trackedPrinters.isEmpty())
+					{
+						final ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
+						for (PrinterId id: trackedPrinters)
+						{
+							ret.add(getPrinterInfoFull(id));
+						}
+						Log.d(TAG, "onStartPrinterTracking(): finishing from discover thread");
+						handler.post(new Runnable()
+						{
+							public void run()
+							{
+								addPrinters(ret);
+							}
+						});
+					}
+				}
+				try
+				{
+					sem.tryAcquire(2, TimeUnit.SECONDS);
+				}
+				catch(Exception e)
+				{
+				}
+			}
+		}
+
+		private PrinterInfo getPrinterInfoBasic(PrinterId id)
+		{
+			return getPrinterInfo(id, false);
+		}
+		private PrinterInfo getPrinterInfoFull(PrinterId id)
+		{
+			return getPrinterInfo(id, true);
+		}
+		private PrinterInfo getPrinterInfo(PrinterId id, boolean updateCaps)
 		{
 			String pr = id.getLocalId();
 			PrinterInfo.Builder pi = new PrinterInfo.Builder(id, pr, Cups.getPrinterStatus(CupsPrintService.this, pr));
 			pi.setDescription("");
 			pi.setName(pr);
+			if (!updateCaps)
+				return pi.build();
 			PrinterCapabilitiesInfo.Builder pc = new PrinterCapabilitiesInfo.Builder(id);
 			Map<String, String[]> options = Cups.getPrinterOptions(CupsPrintService.this, pr);
 			boolean hasPageSize = false;

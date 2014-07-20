@@ -91,6 +91,7 @@ public class AddPrinterActivity extends Activity
 {
 	private ScrollView scroll = null;
 	private LinearLayout layout = null;
+	private Button viewNetwork = null;
 	private EditText name = null;
 	private EditText server = null;
 	private EditText printer = null;
@@ -103,6 +104,8 @@ public class AddPrinterActivity extends Activity
 	private ProgressDialog progressCircle = null;
 
 	private Map<String, String> modelList = null;
+
+	private String[] networkTree = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -117,6 +120,67 @@ public class AddPrinterActivity extends Activity
 		layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 		layout.setPadding(10, 10, 10, 10);
 		scroll.addView(layout, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+		viewNetwork = new Button(this);
+		viewNetwork.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		viewNetwork.setText(getResources().getString(R.string.view_network_button));
+		viewNetwork.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				final String[] networkTreeCopy = networkTree;
+				AlertDialog.Builder builder = new AlertDialog.Builder(AddPrinterActivity.this);
+				//builder.setTitle(R.string.network);
+				builder.setItems(networkTreeCopy, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, final int which)
+					{
+						dialog.dismiss();
+						String selected = networkTreeCopy[which];
+						selected = selected.trim();
+						if (!selected.startsWith("\\\\"))
+							return;
+						selected = selected.substring(2);
+						if (selected.indexOf("\\") == -1)
+							return;
+						String server = selected.substring(0, selected.indexOf("\\"));
+						String share = selected.substring(selected.indexOf("\\") + 1);
+						share = share.split("\\s+")[0];
+						AddPrinterActivity.this.server.setText(server);
+						AddPrinterActivity.this.printer.setText(share);
+						AddPrinterActivity.this.name.setText(server + "-" + share);
+						String workgroup = "";
+						for (int i = 0; i < which; i++)
+						{
+							if (networkTreeCopy[i].indexOf("\\") == -1)
+								workgroup = networkTreeCopy[i];
+						}
+						if (workgroup.length() > 0)
+							AddPrinterActivity.this.domain.setText(workgroup);
+					}
+				});
+				builder.setNegativeButton(R.string.close, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface d, int s)
+					{
+						d.dismiss();
+					}
+				});
+				builder.setPositiveButton(R.string.view_network_button_scan_again, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface d, int s)
+					{
+						d.dismiss();
+						updateNetworkTree();
+					}
+				});
+				AlertDialog alert = builder.create();
+				alert.setOwnerActivity(AddPrinterActivity.this);
+				alert.show();
+			}
+		});
+		layout.addView(viewNetwork);
+		updateNetworkTree();
 
 		TextView text = null;
 
@@ -325,6 +389,31 @@ public class AddPrinterActivity extends Activity
 						model.setHint(R.string.model_hint);
 						model.setEnabled(true);
 						selectModel.setEnabled(true);
+					}
+				});
+			}
+		}).start();
+	}
+
+	public void updateNetworkTree()
+	{
+		if (viewNetwork == null)
+			return;
+		viewNetwork.setEnabled(false);
+		viewNetwork.setText(getResources().getString(R.string.view_network_button_scanning));
+		new Thread(new Runnable()
+		{
+			public void run()
+			{
+				networkTree = Cups.getNetworkTree(AddPrinterActivity.this);
+				runOnUiThread(new Runnable()
+				{
+					public void run()
+					{
+						if (viewNetwork == null)
+							return;
+						viewNetwork.setEnabled(true);
+						viewNetwork.setText(getResources().getString(R.string.view_network_button));
 					}
 				});
 			}

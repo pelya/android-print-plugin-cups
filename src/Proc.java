@@ -180,5 +180,5 @@ public class Proc
 		p.destroy();
 	}
 
-	static public final String TAG = "Proc";
+	static public final String TAG = "CupsExec";
 }
