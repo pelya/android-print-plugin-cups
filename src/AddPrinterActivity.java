@@ -405,7 +405,7 @@ public class AddPrinterActivity extends Activity
 		{
 			public void run()
 			{
-				networkTree = Cups.getNetworkTree(AddPrinterActivity.this);
+				networkTree = Cups.getNetworkTree(AddPrinterActivity.this, user.getText().toString(), password.getText().toString(), domain.getText().toString());
 				runOnUiThread(new Runnable()
 				{
 					public void run()

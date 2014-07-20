@@ -299,7 +299,7 @@ public class MainActivity extends Activity
 		{
 			public void run()
 			{
-				networkTree = Cups.getNetworkTree(MainActivity.this);
+				networkTree = Cups.getNetworkTree(MainActivity.this, "", "", "");
 				runOnUiThread(new Runnable()
 				{
 					public void run()

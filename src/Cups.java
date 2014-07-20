@@ -80,6 +80,7 @@ import android.app.ProgressDialog;
 import android.printservice.*;
 import android.print.*;
 import java.util.*;
+import java.io.*;
 import android.os.Environment;
 import android.os.StatFs;
 import java.net.URL;
@@ -213,6 +214,8 @@ public class Cups
 
 	synchronized static void addPrinter(Context p, String name, String host, String printer, String model, String workgroup, String username, String password)
 	{
+		// TODO: user password will be accessbile through /proc filesystem to all processes, for several seconds while the command is executing
+		// lpadmin does not provide any other convenient way of passing passwords though, and I don't want to mess up with lpoptions
 		name = name.trim().replaceAll("[ 	/#]", "-");
 		host = host.trim();
 		printer = printer.trim();
@@ -235,16 +238,79 @@ public class Cups
 		new Proc(new String[] {PROOT, LPADMIN, "-x", name}, chrootPath(p));
 	}
 
-	synchronized static void deletePrinter(Context p, String host, String printer, String model, String workgroup, String username, String password)
+	synchronized static void printDocument(final Context p, final android.printservice.PrintJob job)
 	{
-		String url = "smb://";
-		if (username.length() > 0 && password.length() > 0)
-			url = url + username + ":" + password + "@";
-		if (workgroup.length() > 0)
-			url = url + workgroup + "/";
-		url = url + host + "/";
-		url = url + printer;
-		new Proc(new String[] {PROOT, LPADMIN, "-p", url, "-m", model}, chrootPath(p));
+		final String PIPE = "document.pdf";
+		new Proc(new String[] {PROOT, "/usr/bin/mkfifo", "-m", "600", "/" + PIPE}, chrootPath(p));
+		Thread dataStream = new Thread(new Runnable()
+		{
+			public void run()
+			{
+				try
+				{
+					OutputStream out = new FileOutputStream(new File(chrootPath(p), PIPE));
+					InputStream in = new FileInputStream(job.getDocument().getData().getFileDescriptor());
+					copyStream(in, out);
+				}
+				catch(Exception e)
+				{
+					Log.i(TAG, "Error printing document: " + e.toString());
+				}
+			}
+		});
+		dataStream.start();
+		ArrayList<String> params = new ArrayList<String>();
+		params.add(PROOT);
+		params.add(LP);
+		params.add("-d");
+		params.add(job.getInfo().getPrinterId().getLocalId());
+		params.add("-m");
+		params.add(String.valueOf(job.getInfo().getCopies()));
+		params.add("-t");
+		params.add(job.getInfo().getLabel().length() > 0 ? job.getInfo().getLabel() : "PrintJob");
+		if (job.getInfo().getAttributes().getMediaSize() != null)
+		{
+			params.add("-o");
+			params.add("media=" + job.getInfo().getAttributes().getMediaSize().getId());
+			if (!job.getInfo().getAttributes().getMediaSize().isPortrait())
+			{
+				params.add("-o");
+				params.add("landscape");
+			}
+		}
+		if (job.getInfo().getAttributes().getResolution() != null)
+		{
+			params.add("-o");
+			params.add("Resolution=" + job.getInfo().getAttributes().getResolution().getId());
+		}
+		if (job.getInfo().getPages() != null)
+		{
+			params.add("-P");
+			String pages = "";
+			for (PageRange r: job.getInfo().getPages())
+			{
+				if (pages.length() > 0)
+					pages = pages + ",";
+				pages += String.valueOf(r.getStart() + 1);
+				if (r.getStart() != r.getEnd())
+					pages += "-" + String.valueOf(r.getEnd() + 1);
+			}
+			params.add(pages);
+		}
+		// if (job.getInfo().getAttributes().getMinMargins() != null) // Not supported yet
+		params.add("/" + PIPE);
+
+		Log.i(TAG, "Printing document command: " + Arrays.toString(params.toArray(new String[0])));
+		Proc lp = new Proc(params.toArray(new String[0]), chrootPath(p));
+		Log.i(TAG, "Printing document finished: status: " + lp.status + " msg: " + Arrays.toString(lp.out));
+		try
+		{
+			dataStream.join();
+		}
+		catch(Exception e)
+		{
+		}
+		job.complete();
 	}
 
 	synchronized static Map<String, String> getPrinterModels(Context p)
@@ -332,8 +398,33 @@ public class Cups
 		return new File(p.getFilesDir().getAbsolutePath() + IMG + CUPSD).exists();
 	}
 
-	static String[] getNetworkTree(Context p)
+	static String[] getNetworkTree(Context p, String login, String password, String domain)
 	{
+		if (login.length() > 0 && password.length() > 0)
+		{
+			File auth = null;
+			try
+			{
+				auth = File.createTempFile("auth-", ".txt", chrootPath(p));
+				auth.setReadable(false, false);
+				auth.setReadable(true, true);
+				auth.setWritable(false, false);
+				auth.setWritable(true, true);
+				BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(auth), "utf-8"));
+				out.write("username = " + login + "\n");
+				out.write("password = " + password + "\n");
+				if (domain.length() > 0)
+					out.write("domain = " + domain + "\n");
+				out.close();
+			}
+			catch(Exception e)
+			{
+				return new Proc(new String[] {PROOT, "/usr/bin/smbtree", "-N", }, chrootPath(p)).out;
+			}
+			Proc ret = new Proc(new String[] {PROOT, "/usr/bin/smbtree", "-A", "/" + auth.getName()}, chrootPath(p));
+			auth.delete();
+			return ret.out;
+		}
 		return new Proc(new String[] {PROOT, "/usr/bin/smbtree", "-N", }, chrootPath(p)).out;
 	}
 

@@ -313,7 +313,8 @@ public class CupsPrintService extends PrintService
 
 	@Override public void onPrintJobQueued(android.printservice.PrintJob printJob)
 	{
-		Log.d(TAG, "onPrintJobQueued()");
+		Log.d(TAG, "=============== onPrintJobQueued() ===============");
+		Cups.printDocument(this, printJob);
 	}
 
 	@Override public void onRequestCancelPrintJob(android.printservice.PrintJob printJob)
