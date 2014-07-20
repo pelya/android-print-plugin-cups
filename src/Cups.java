@@ -82,6 +82,7 @@ import android.print.*;
 import java.util.*;
 import android.os.Environment;
 import android.os.StatFs;
+import java.net.URL;
 
 public class Cups
 {
@@ -396,10 +397,26 @@ public class Cups
 			{
 				Log.i(TAG, "Error unpacking data from assets: " + e.toString());
 				Log.i(TAG, "No data archive in assets, trying OBB data");
-				new Proc(new String[] {busybox, "tar", "xJf",
-							new File(p.getExternalFilesDir(null).getParentFile().getParentFile().getParentFile(),
-							"obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb").getAbsolutePath()},
-							p.getFilesDir());
+				try
+				{
+					new Proc(new String[] {busybox, "tar", "xJf",
+								new File(p.getExternalFilesDir(null).getParentFile().getParentFile().getParentFile(),
+								"obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb").getAbsolutePath()},
+								p.getFilesDir());
+				}
+				catch(Exception ee)
+				{
+					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/dist-cups-wheezy.tar.xz/download";
+					Log.i(TAG, "Error unpacking data from OBB: " + e.toString());
+					Log.i(TAG, "No data archive in OBB, downloading from web: " + ARCHIVE_URL);
+					setText(p, text, p.getResources().getString(R.string.downloading_web) + " " + e.toString());
+					URL link = new URL(ARCHIVE_URL);
+					InputStream download = new BufferedInputStream(link.openStream());
+					Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
+					copyStream(download, proc.getOutputStream());
+					int status = proc.waitFor();
+					Log.i(TAG, "Downloading from web: status: " + status);
+				}
 			}
 
 			new Proc(new String[] {busybox, "cp", "-af", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
@@ -410,7 +427,7 @@ public class Cups
 
 			Log.i(TAG, "Extracting data finished");
 		}
-		catch( java.io.IOException e )
+		catch(Exception e)
 		{
 			Log.i(TAG, "Error extracting data: " + e.toString());
 			setText(p, text, p.getResources().getString(R.string.error_extracting) + " " + e.toString());

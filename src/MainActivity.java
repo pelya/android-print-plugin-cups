@@ -123,7 +123,6 @@ public class MainActivity extends Activity
 		text.setText("Initializing");
 		text.setTextSize(20);
 		text.setPadding(20, 20, 20, 50);
-		text.setAutoLinkMask(Linkify.WEB_URLS);
 		layout.addView(text);
 		setContentView(layout);
 	}

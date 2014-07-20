@@ -4,16 +4,7 @@
 
 	<string name="init">Initializing</string>
 	<string name="please_wait_unpack">Please wait while data is being unpacked</string>
-
-	<string name="download_unneeded">No need to download</string>
-	<string name="connecting_to">Connecting to %s</string>
-	<string name="failed_connecting_to">Failed connecting to %s</string>
-	<string name="error_connecting_to">Error connecting to %s</string>
-	<string name="dl_from">Downloading data from %s</string>
-	<string name="error_dl_from">Error downloading data from %s</string>
-	<string name="error_write">Error writing to %s</string>
-	<string name="dl_progress">%1$.0f%% done: file %2$s</string>
-	<string name="dl_finished">Finished</string>
+	<string name="downloading_web">Downloading 100 Mb data from server, this may take several minutes</string>
 	<string name="not_enough_space">Not enough free space on storage: %1$d Mb required, %2$d Mb available</string>
 	<string name="error_extracting">Error extracting data: </string>
 
