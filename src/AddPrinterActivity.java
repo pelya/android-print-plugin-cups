@@ -180,7 +180,6 @@ public class AddPrinterActivity extends Activity
 			}
 		});
 		layout.addView(viewNetwork);
-		updateNetworkTree();
 
 		TextView text = null;
 
@@ -368,6 +367,8 @@ public class AddPrinterActivity extends Activity
 		layout.addView(addPrinter);
 
 		progressCircle = new ProgressDialog(this);
+
+		updateNetworkTree();
 
 		setContentView(scroll);
 
