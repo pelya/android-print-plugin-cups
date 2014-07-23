@@ -132,7 +132,7 @@ public class Proc
 						{
 							outArr.add(line);
 						}
-						Log.d(TAG, "Exec: out: " + line);
+						//Log.d(TAG, "Exec: out: " + line);
 					}
 					bout.close();
 				}
@@ -156,7 +156,7 @@ public class Proc
 						{
 							outArr.add(line);
 						}
-						Log.d(TAG, "Exec: err: " + line);
+						//Log.d(TAG, "Exec: err: " + line);
 					}
 					berr.close();
 				}

@@ -127,7 +127,7 @@ public class AdvancedPrintOptionsActivity extends Activity
 				AdvancedPrintOptionsActivity.this.finish();
 			}
 		});
-		layout.addView(sourcesUrl);
+		layout.addView(close);
 
 		setContentView(layout);
 	}

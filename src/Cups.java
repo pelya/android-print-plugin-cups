@@ -95,7 +95,9 @@ public class Cups
 	static String LPOPTIONS = "/usr/bin/lpoptions";
 	static String LPINFO = "/usr/sbin/lpinfo";
 	static String LPADMIN = "/usr/sbin/lpadmin";
+	static String DBUS = "/usr/bin/dbus-daemon";
 	static Process cupsd = null;
+	static Process dbus = null;
 
 	static File chrootPath(Context p)
 	{
@@ -254,20 +256,32 @@ public class Cups
 		final String PIPE = "document.pdf";
 		new Proc(new String[] {PROOT, "/usr/bin/mkfifo", "-m", "600", "/" + PIPE}, chrootPath(p));
 		final InputStream in = new FileInputStream(job.getDocument().getData().getFileDescriptor());
+		final boolean[] pipeFinished = new boolean[] {false};
 		Thread dataStream = new Thread(new Runnable()
 		{
 			public void run()
 			{
+				OutputStream out = null;
 				try
 				{
-					OutputStream out = new FileOutputStream(new File(chrootPath(p), PIPE));
 					Log.d(TAG, "Printing document: copying data to pipe");
+					out = new FileOutputStream(new File(chrootPath(p), PIPE));
 					int len = copyStream(in, out);
 					Log.d(TAG, "Printing document: finished copying data to pipe: " + len + " bytes");
+					pipeFinished[0] = true;
 				}
 				catch(Exception e)
 				{
 					Log.i(TAG, "Error printing document: " + e.toString());
+					pipeFinished[0] = true;
+					try
+					{
+						if (out != null)
+							out.close();
+					}
+					catch(Exception ee)
+					{
+					}
 				}
 			}
 		});
@@ -277,7 +291,7 @@ public class Cups
 		params.add(LP);
 		params.add("-d");
 		params.add(job.getInfo().getPrinterId().getLocalId());
-		params.add("-m");
+		params.add("-n");
 		params.add(String.valueOf(job.getInfo().getCopies()));
 		params.add("-t");
 		params.add(job.getInfo().getLabel().length() > 0 ? job.getInfo().getLabel() : "PrintJob");
@@ -317,6 +331,27 @@ public class Cups
 		Log.i(TAG, "Printing document command: " + Arrays.toString(params.toArray(new String[0])));
 		Proc lp = new Proc(params.toArray(new String[0]), chrootPath(p));
 		Log.i(TAG, "Printing document finished: status: " + lp.status + " msg: " + Arrays.toString(lp.out));
+		if (lp.status != 0 && !pipeFinished[0])
+		{
+			// lp process did not read from pipe at all, read everything from pipe to unblock the thread
+			try
+			{
+				Thread.sleep(300);
+				if (!pipeFinished[0])
+				{
+					Log.i(TAG, "Printing document failed: emptying pipe");
+					InputStream in2 = new FileInputStream(new File(chrootPath(p), PIPE));
+					byte[] buf = new byte[16384];
+					while (in2.read(buf) >= 0)
+					{
+					}
+					in2.close();
+				}
+			}
+			catch(Exception e)
+			{
+			}
+		}
 		try
 		{
 			dataStream.join();
@@ -368,17 +403,23 @@ public class Cups
 		if (cupsd == null)
 			return;
 		cupsd.destroy();
+		dbus.destroy();
 		cupsd = null;
 	}
 
 	synchronized static void restartCupsDaemon(Context p)
 	{
 		if (cupsd != null)
+		{
 			cupsd.destroy();
+			dbus.destroy();
+		}
 		cupsd = null;
+		dbus = null;
 		try
 		{
 			updateDns(p);
+			dbus = Runtime.getRuntime().exec(new String[] {PROOT, DBUS, "--system"}, null, chrootPath(p));
 			cupsd = Runtime.getRuntime().exec(new String[] {PROOT, CUPSD, "-f"}, null, chrootPath(p));
 			for (int i = 0; i < 10 && !isDaemonRunning(p); i++)
 			{
@@ -451,8 +492,8 @@ public class Cups
 			totalLen += len;
 			len = stream.read(buf);
 		}
-		out.close();
 		stream.close();
+		out.close();
 		return totalLen;
 	}
 
