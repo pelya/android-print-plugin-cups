@@ -37,6 +37,7 @@
 	<string name="view_network_button">View network shares</string>
 	<string name="view_network_button_scanning">Scanning network...</string>
 	<string name="view_network_button_scan_again">Scan again</string>
+	<string name="login_password_hint">Enter login and password to view hidden shared printers</string>
 	<string name="advanced_interface_button">Advanced interface</string>
 
 	<string name="name_desc">Printer description</string>

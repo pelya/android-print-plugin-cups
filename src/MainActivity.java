@@ -101,13 +101,13 @@ public class MainActivity extends Activity
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate");
 		reinitUI();
-		Cups.unpackData(this, text);
+		Installer.unpackData(this, text);
 	}
 
 	@Override protected void onStart()
 	{
 		super.onStart();
-		if (!Cups.unpacking)
+		if (!Installer.unpacking)
 			enableSettingsButton();
 	}
 

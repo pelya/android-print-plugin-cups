@@ -240,8 +240,20 @@ public class Cups
 
 	synchronized static void printDocument(final Context p, final android.printservice.PrintJob job)
 	{
+		Map<String, String[]> options = getPrinterOptions(p, job.getInfo().getPrinterId().getLocalId());
+		HashSet<String> pageSizes = new HashSet(Arrays.asList(options.containsKey("PageSize") ? options.get("PageSize") : new String[] {"A4", "Letter"}));
+		HashSet<String> resolutions = new HashSet(Arrays.asList(options.containsKey("Resolution") ? options.get("Resolution") : new String[] {}));
+		/*
+		for (String s: pageSizes)
+			Log.i(TAG, "Media size available: '" + s + "'");
+		Log.i(TAG, "Media size to print: '" + job.getInfo().getAttributes().getMediaSize().getId() + "'");
+		for (String s: resolutions)
+			Log.i(TAG, "Resolution available: '" + s + "'");
+		Log.i(TAG, "Resolution to print: '" + job.getInfo().getAttributes().getResolution().getId() + "'");
+		*/
 		final String PIPE = "document.pdf";
 		new Proc(new String[] {PROOT, "/usr/bin/mkfifo", "-m", "600", "/" + PIPE}, chrootPath(p));
+		final InputStream in = new FileInputStream(job.getDocument().getData().getFileDescriptor());
 		Thread dataStream = new Thread(new Runnable()
 		{
 			public void run()
@@ -249,8 +261,9 @@ public class Cups
 				try
 				{
 					OutputStream out = new FileOutputStream(new File(chrootPath(p), PIPE));
-					InputStream in = new FileInputStream(job.getDocument().getData().getFileDescriptor());
-					copyStream(in, out);
+					Log.d(TAG, "Printing document: copying data to pipe");
+					int len = copyStream(in, out);
+					Log.d(TAG, "Printing document: finished copying data to pipe: " + len + " bytes");
 				}
 				catch(Exception e)
 				{
@@ -268,7 +281,7 @@ public class Cups
 		params.add(String.valueOf(job.getInfo().getCopies()));
 		params.add("-t");
 		params.add(job.getInfo().getLabel().length() > 0 ? job.getInfo().getLabel() : "PrintJob");
-		if (job.getInfo().getAttributes().getMediaSize() != null)
+		if (job.getInfo().getAttributes().getMediaSize() != null && pageSizes.contains(job.getInfo().getAttributes().getMediaSize().getId()))
 		{
 			params.add("-o");
 			params.add("media=" + job.getInfo().getAttributes().getMediaSize().getId());
@@ -278,12 +291,13 @@ public class Cups
 				params.add("landscape");
 			}
 		}
-		if (job.getInfo().getAttributes().getResolution() != null)
+		if (job.getInfo().getAttributes().getResolution() != null && resolutions.contains(job.getInfo().getAttributes().getResolution().getId()))
 		{
 			params.add("-o");
 			params.add("Resolution=" + job.getInfo().getAttributes().getResolution().getId());
 		}
-		if (job.getInfo().getPages() != null)
+		if (job.getInfo().getPages() != null && job.getInfo().getPages().length > 0 &&
+			job.getInfo().getPages()[0].getStart() > 0 && job.getInfo().getPages()[0].getEnd() > 0)
 		{
 			params.add("-P");
 			String pages = "";
@@ -310,7 +324,9 @@ public class Cups
 		catch(Exception e)
 		{
 		}
+		Log.d(TAG, "Printing document: completing job");
 		job.complete();
+		Log.d(TAG, "Printing document: completed job");
 	}
 
 	synchronized static Map<String, String> getPrinterModels(Context p)
@@ -393,11 +409,6 @@ public class Cups
 		Proc pp = new Proc(new String[] {"./update-dns.sh"}, chrootPath(p));
 	}
 
-	synchronized static boolean isInstalled(Context p)
-	{
-		return new File(p.getFilesDir().getAbsolutePath() + IMG + CUPSD).exists();
-	}
-
 	static String[] getNetworkTree(Context p, String login, String password, String domain)
 	{
 		if (login.length() > 0 && password.length() > 0)
@@ -428,135 +439,21 @@ public class Cups
 		return new Proc(new String[] {PROOT, "/usr/bin/smbtree", "-N", }, chrootPath(p)).out;
 	}
 
-	static boolean unpacking = false;
-
-	synchronized static void unpackData(final MainActivity p, final TextView text)
-	{
-		unpacking = true;
-		new Thread(new Runnable()
-		{
-			public void run()
-			{
-				unpackDataThread(p, text);
-			}
-		}).start();
-	}
-
-	synchronized static void unpackDataThread(final MainActivity p, final TextView text)
-	{
-		if (isInstalled(p))
-		{
-			unpacking = false;
-			startCupsDaemon(p);
-			p.enableSettingsButton();
-			return;
-		}
-
-		Log.i(TAG, "Extracting CUPS data");
-
-		setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
-
-		StatFs storage = new StatFs(p.getFilesDir().getPath());
-		long avail = (long)storage.getAvailableBlocks() * storage.getBlockSize() / 1024 / 1024;
-		long needed = 500;
-		Log.i(TAG, "Available free space: " + avail + " Mb required: " + needed + " Mb");
-		if (avail < needed)
-		{
-			setText(p, text, p.getResources().getString(R.string.not_enough_space, needed, avail));
-			return;
-		}
-
-		try
-		{
-			p.getFilesDir().mkdirs();
-			InputStream stream = p.getAssets().open("busybox-" + android.os.Build.CPU_ABI);
-			String busybox = new File(p.getFilesDir(), "busybox").getAbsolutePath();
-			OutputStream out = new FileOutputStream(busybox);
-
-			copyStream(stream, out);
-
-			new Proc(new String[] {"/system/bin/chmod", "0755", busybox}, p.getFilesDir());
-
-			try
-			{
-				InputStream archiveAssets = p.getAssets().open("dist-cups-wheezy.tar.xz");
-				Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
-				copyStream(archiveAssets, proc.getOutputStream());
-				int status = proc.waitFor();
-				Log.i(TAG, "Unpacking data from assets: status: " + status);
-			}
-			catch(Exception e)
-			{
-				Log.i(TAG, "Error unpacking data from assets: " + e.toString());
-				Log.i(TAG, "No data archive in assets, trying OBB data");
-				try
-				{
-					File obbFile = new File(p.getExternalFilesDir(null).getParentFile().getParentFile().getParentFile(),
-												"obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb");
-					if (!obbFile.exists())
-						throw new IOException("Cannot find data file: " + obbFile.getAbsolutePath());
-					new Proc(new String[] {busybox, "tar", "xJf",
-								obbFile.getAbsolutePath()},
-								p.getFilesDir());
-				}
-				catch(Exception ee)
-				{
-					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/dist-cups-wheezy.tar.xz/download";
-					Log.i(TAG, "Error unpacking data from OBB: " + e.toString());
-					Log.i(TAG, "No data archive in OBB, downloading from web: " + ARCHIVE_URL);
-					setText(p, text, p.getResources().getString(R.string.downloading_web));
-					URL link = new URL(ARCHIVE_URL);
-					InputStream download = new BufferedInputStream(link.openStream());
-					Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
-					copyStream(download, proc.getOutputStream());
-					int status = proc.waitFor();
-					Log.i(TAG, "Downloading from web: status: " + status);
-				}
-			}
-
-			new Proc(new String[] {busybox, "cp", "-af", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
-			new Proc(new String[] {busybox, "rm", "-rf", "img-armeabi-v7a", "img-x86"}, p.getFilesDir());
-			stream = p.getAssets().open("cupsd.conf");
-			out = new FileOutputStream(new File(chrootPath(p), "etc/cups/cupsd.conf"));
-			copyStream(stream, out);
-
-			Log.i(TAG, "Extracting data finished");
-		}
-		catch(Exception e)
-		{
-			Log.i(TAG, "Error extracting data: " + e.toString());
-			setText(p, text, p.getResources().getString(R.string.error_extracting) + " " + e.toString());
-			return;
-		}
-
-		unpacking = false;
-		p.enableSettingsButton();
-		startCupsDaemon(p);
-	}
-
-	static void setText(final Activity p, final TextView text, final String str)
-	{
-		p.runOnUiThread(new Runnable()
-		{
-			public void run()
-			{
-				text.setText(str);
-			}
-		});
-	}
-
-	static void copyStream(InputStream stream, OutputStream out) throws java.io.IOException
+	public static int copyStream(InputStream stream, OutputStream out) throws java.io.IOException
 	{
 		byte[] buf = new byte[16384];
 		int len = stream.read(buf);
+		int totalLen = 0;
 		while (len >= 0)
 		{
 			if(len > 0)
 				out.write(buf, 0, len);
+			totalLen += len;
 			len = stream.read(buf);
 		}
 		out.close();
 		stream.close();
+		return totalLen;
 	}
 
 	static final String TAG = "Cups";

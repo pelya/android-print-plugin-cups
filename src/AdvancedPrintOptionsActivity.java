@@ -85,6 +85,7 @@ public class AdvancedPrintOptionsActivity extends Activity
 	private LinearLayout layout = null;
 	private TextView text = null;
 	private Button sourcesUrl = null;
+	private Button close = null;
 
 
 	@Override
@@ -112,6 +113,18 @@ public class AdvancedPrintOptionsActivity extends Activity
 			public void onClick(View v)
 			{
 				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(getResources().getString(R.string.sources_url))));
+			}
+		});
+		layout.addView(sourcesUrl);
+
+		close = new Button(this);
+		close.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		close.setText(getResources().getString(R.string.close));
+		close.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				AdvancedPrintOptionsActivity.this.finish();
 			}
 		});
 		layout.addView(sourcesUrl);

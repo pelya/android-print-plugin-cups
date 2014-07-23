@@ -107,7 +107,7 @@ public class CupsPrintService extends PrintService
 	{
 		Log.d(TAG, "onConnected()");
 		super.onConnected();
-		if (!Cups.isInstalled(this))
+		if (!Installer.isInstalled(this))
 		{
 			Intent dialogIntent = new Intent(getBaseContext(), MainActivity.class);
 			dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -129,8 +129,6 @@ public class CupsPrintService extends PrintService
 	class CupsPrinterDiscoverySession extends PrinterDiscoverySession implements Runnable
 	{
 		private boolean shouldExit = false;
-		private boolean startDiscovery = false;
-		private PrinterId[] discoveredPrinters = null;
 		private HashSet<PrinterId> trackedPrinters = new HashSet<PrinterId>();
 		private Semaphore sem = new Semaphore(0);
 		private Handler handler = null;
@@ -150,19 +148,17 @@ public class CupsPrintService extends PrintService
 		public synchronized void onStartPrinterDiscovery(List<PrinterId> priorityList)
 		{
 			Log.d(TAG, "onStartPrinterDiscovery()");
-			startDiscovery = true;
-			String[] printers = Cups.getPrinters(CupsPrintService.this);
-			discoveredPrinters = new PrinterId[printers.length];
-			for (int i = 0; i < printers.length; i++)
+			final ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
+			for (String pr: Cups.getPrinters(CupsPrintService.this))
 			{
-				discoveredPrinters[i] = generatePrinterId(printers[i]);
+				PrinterId id = generatePrinterId(pr);
+				ret.add(getPrinterInfoBasic(id));
 			}
-			sem.release();
+			addPrinters(ret);
 		}
 		public synchronized void onStopPrinterDiscovery()
 		{
 			Log.d(TAG, "onStopPrinterDiscovery()");
-			startDiscovery = false;
 		}
 		public synchronized void onStartPrinterStateTracking(PrinterId id)
 		{
@@ -196,25 +192,6 @@ public class CupsPrintService extends PrintService
 				{
 					if (shouldExit)
 						return;
-					if (startDiscovery)
-					{
-						final ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
-						String[] printers = Cups.getPrinters(CupsPrintService.this);
-						for (PrinterId id: discoveredPrinters)
-						{
-							ret.add(getPrinterInfoBasic(id));
-						}
-						Log.d(TAG, "onStartPrinterDiscovery(): finishing from discover thread");
-						handler.post(new Runnable()
-						{
-							public void run()
-							{
-								addPrinters(ret);
-							}
-						});
-						discoveredPrinters = null;
-						startDiscovery = false;
-					}
 					if (!trackedPrinters.isEmpty())
 					{
 						final ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
@@ -234,7 +211,7 @@ public class CupsPrintService extends PrintService
 				}
 				try
 				{
-					sem.tryAcquire(2, TimeUnit.SECONDS);
+					sem.tryAcquire(3, TimeUnit.SECONDS);
 				}
 				catch(Exception e)
 				{
@@ -319,7 +296,8 @@ public class CupsPrintService extends PrintService
 
 	@Override public void onRequestCancelPrintJob(android.printservice.PrintJob printJob)
 	{
-		Log.d(TAG, "onRequestCancelPrintJob()");
+		Log.d(TAG, "=============== onRequestCancelPrintJob() ===============");
+		Log.i(TAG, "=============== Cancelling a print job is not supported yet ===============");
 	}
 
 	public static final String TAG = "CupsPrintService";

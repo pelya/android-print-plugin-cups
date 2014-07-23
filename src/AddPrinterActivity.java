@@ -85,6 +85,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.app.ProgressDialog;
 import android.text.method.PasswordTransformationMethod;
+import android.widget.Toast;
 
 
 public class AddPrinterActivity extends Activity
@@ -164,6 +165,8 @@ public class AddPrinterActivity extends Activity
 					public void onClick(DialogInterface d, int s)
 					{
 						d.dismiss();
+						if (user.getText().toString().length() == 0 || password.getText().toString().length() == 0)
+							Toast.makeText(AddPrinterActivity.this, R.string.login_password_hint, Toast.LENGTH_LONG).show();
 					}
 				});
 				builder.setPositiveButton(R.string.view_network_button_scan_again, new DialogInterface.OnClickListener()
@@ -172,6 +175,8 @@ public class AddPrinterActivity extends Activity
 					{
 						d.dismiss();
 						updateNetworkTree();
+						if (user.getText().toString().length() == 0 || password.getText().toString().length() == 0)
+							Toast.makeText(AddPrinterActivity.this, R.string.login_password_hint, Toast.LENGTH_LONG).show();
 					}
 				});
 				AlertDialog alert = builder.create();
