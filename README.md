@@ -4,7 +4,8 @@ android-print-plugin-cups
 CUPS print plugin for Android.
 
 There are other print plugins like this one, however I did not find any open-source plugins,
-most of them have outrageous prices, and the only free plugin failed to work with Android printing framework.
+most of them have outrageous prices, and the only free plugin failed to work with Android printing framework,
+that's also the reason why I chose GPL as a license for this plugin.
 
 This plugin unpacks minimal Debian installation with CUPS included,
 and launches it using PRoot, then uses it for actual printing.
