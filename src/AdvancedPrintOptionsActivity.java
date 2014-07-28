@@ -78,6 +78,8 @@ import android.util.Log;
 import android.view.Surface;
 import android.app.ProgressDialog;
 import android.net.Uri;
+import android.print.*;
+import android.printservice.*;
 
 
 public class AdvancedPrintOptionsActivity extends Activity
@@ -87,6 +89,9 @@ public class AdvancedPrintOptionsActivity extends Activity
 	private Button sourcesUrl = null;
 	private Button close = null;
 
+	private PrintJobInfo.Builder jobInfo;
+
+	// TODO: option for two-sided printing
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -124,12 +129,25 @@ public class AdvancedPrintOptionsActivity extends Activity
 		{
 			public void onClick(View v)
 			{
+				Intent resultIntent = new Intent();
+				resultIntent.putExtra(PrintService.EXTRA_PRINT_JOB_INFO, jobInfo.build());
+				AdvancedPrintOptionsActivity.this.setResult(Activity.RESULT_OK, resultIntent);
 				AdvancedPrintOptionsActivity.this.finish();
 			}
 		});
 		layout.addView(close);
 
 		setContentView(layout);
+
+		PrintJobInfo oldJobInfo = (PrintJobInfo) getIntent().getParcelableExtra(PrintService.EXTRA_PRINT_JOB_INFO);
+		if (oldJobInfo == null)
+		{
+			AdvancedPrintOptionsActivity.this.setResult(Activity.RESULT_CANCELED, new Intent());
+			finish();
+		}
+
+		jobInfo = new PrintJobInfo.Builder(oldJobInfo);
+		// jobInfo.putAdvancedOption()
 	}
 
 	static public final String TAG = "AdvancedPrintOptionsActivity";

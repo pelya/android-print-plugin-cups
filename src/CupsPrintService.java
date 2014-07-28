@@ -288,10 +288,37 @@ public class CupsPrintService extends PrintService
 		return new CupsPrinterDiscoverySession();
 	}
 
-	@Override public void onPrintJobQueued(android.printservice.PrintJob printJob)
+	@Override public void onPrintJobQueued(android.printservice.PrintJob job)
 	{
 		Log.d(TAG, "=============== onPrintJobQueued() ===============");
-		Cups.printDocument(this, printJob);
+		Map<String, String[]> options = Cups.getPrinterOptions(this, job.getInfo().getPrinterId().getLocalId());
+		HashSet<String> pageSizes = new HashSet(Arrays.asList(options.containsKey("PageSize") ? options.get("PageSize") : new String[] {"A4", "Letter"}));
+		HashSet<String> resolutions = new HashSet(Arrays.asList(options.containsKey("Resolution") ? options.get("Resolution") : new String[] {}));
+
+		if (job.isQueued() && !job.isStarted())
+		{
+			boolean started = job.start();
+			Log.d(TAG, "Print job not started, starting job: " + started);
+		}
+
+		Cups.printDocument(	this,
+							job.getInfo().getPrinterId().getLocalId(),
+							job.getDocument().getData().getFileDescriptor(),
+							job.getInfo().getLabel().length() > 0 ? job.getInfo().getLabel() : "PrintJob",
+							job.getInfo().getCopies(),
+							job.getInfo().getAttributes().getMediaSize() != null &&
+							pageSizes.contains(job.getInfo().getAttributes().getMediaSize().getId()) ?
+							job.getInfo().getAttributes().getMediaSize() : null,
+							job.getInfo().getAttributes().getResolution() != null &&
+							resolutions.contains(job.getInfo().getAttributes().getResolution().getId()) ?
+							job.getInfo().getAttributes().getResolution() : null,
+							job.getInfo().getPages() != null && job.getInfo().getPages().length > 0 &&
+							job.getInfo().getPages()[0].getStart() > 0 && job.getInfo().getPages()[0].getEnd() > 0 ?
+							job.getInfo().getPages() : null );
+
+		// TODO: do not complete job immediately, use getPrinterJobs() and report job actual status back to Android
+		boolean completed = job.complete();
+		Log.d(TAG, "Printing document: job completed: " + completed);
 	}
 
 	@Override public void onRequestCancelPrintJob(android.printservice.PrintJob printJob)

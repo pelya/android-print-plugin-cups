@@ -77,8 +77,8 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.Surface;
 import android.app.ProgressDialog;
-import android.printservice.*;
 import android.print.*;
+import android.printservice.*;
 import java.util.*;
 import java.io.*;
 import android.os.Environment;
@@ -98,6 +98,9 @@ public class Cups
 	static String DBUS = "/usr/bin/dbus-daemon";
 	static Process cupsd = null;
 	static Process dbus = null;
+
+	public static final double PointsToMillimeters = 0.352777778;
+	public static final double MillimetersToPoints = 1.0 / PointsToMillimeters;
 
 	static File chrootPath(Context p)
 	{
@@ -131,6 +134,35 @@ public class Cups
 		if (pp.out[0].indexOf("is idle") != -1)
 			return PrinterInfo.STATUS_IDLE;
 		return PrinterInfo.STATUS_BUSY;
+	}
+
+	synchronized static Map<String, String[]> getPrinterJobs(Context p, String printer)
+	{
+		HashMap<String, String[]> ret = new HashMap<String, String[]>();
+		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-l", printer}, chrootPath(p));
+		if (pp.out.length == 0 || pp.status != 0)
+			return ret;
+		String currentJob = null;
+		ArrayList<String> jobAttrs = new ArrayList();
+		for (String s: pp.out)
+		{
+			if (s.trim().length() == 0)
+				continue;
+			if (s.startsWith(" ") || s.startsWith("\t"))
+			{
+				jobAttrs.add(s.trim());
+			}
+			else
+			{
+				if (currentJob != null)
+					ret.put(currentJob, jobAttrs.toArray(new String[0]));
+				currentJob = s.split("\\s+")[0];
+				jobAttrs = new ArrayList();
+			}
+		}
+		if (currentJob != null)
+			ret.put(currentJob, jobAttrs.toArray(new String[0]));
+		return ret;
 	}
 
 	synchronized static Map<String, String[]> getPrinterOptions(Context p, String printer)
@@ -190,9 +222,8 @@ public class Cups
 				//Log.d(TAG, "fillMediaSizes: dimensions: " + Arrays.toString(sizes) + " for " + name);
 				if (sizes.length < 2)
 					continue;
-				final double coeff = (2.83472057075 + 2.83431455004) / 2.0; // This file has some wacky units, not millimeters and not inches
-				int w = (int)(Integer.parseInt(sizes[0]) / coeff);
-				int h = (int)(Integer.parseInt(sizes[1]) / coeff);
+				int w = (int)(Integer.parseInt(sizes[0]) * PointsToMillimeters);
+				int h = (int)(Integer.parseInt(sizes[1]) * PointsToMillimeters);
 				Log.d(TAG, "fillMediaSizes: " + name + " desc '" + descr + "' size " + w + "x" + h);
 				mediaSizes.put(name, new PrintAttributes.MediaSize(name, descr, w, h));
 			}
@@ -240,22 +271,18 @@ public class Cups
 		new Proc(new String[] {PROOT, LPADMIN, "-x", name}, chrootPath(p));
 	}
 
-	synchronized static void printDocument(final Context p, final android.printservice.PrintJob job)
+	synchronized static String printDocument(	final Context p,
+												final String printer,
+												final FileDescriptor documentData,
+												final String jobLabel,
+												int copies,
+												final PrintAttributes.MediaSize mediaSize,
+												final PrintAttributes.Resolution resolution,
+												final PageRange[] pages )
 	{
-		Map<String, String[]> options = getPrinterOptions(p, job.getInfo().getPrinterId().getLocalId());
-		HashSet<String> pageSizes = new HashSet(Arrays.asList(options.containsKey("PageSize") ? options.get("PageSize") : new String[] {"A4", "Letter"}));
-		HashSet<String> resolutions = new HashSet(Arrays.asList(options.containsKey("Resolution") ? options.get("Resolution") : new String[] {}));
-		/*
-		for (String s: pageSizes)
-			Log.i(TAG, "Media size available: '" + s + "'");
-		Log.i(TAG, "Media size to print: '" + job.getInfo().getAttributes().getMediaSize().getId() + "'");
-		for (String s: resolutions)
-			Log.i(TAG, "Resolution available: '" + s + "'");
-		Log.i(TAG, "Resolution to print: '" + job.getInfo().getAttributes().getResolution().getId() + "'");
-		*/
 		final String PIPE = "document.pdf";
 		new Proc(new String[] {PROOT, "/usr/bin/mkfifo", "-m", "600", "/" + PIPE}, chrootPath(p));
-		final InputStream in = new FileInputStream(job.getDocument().getData().getFileDescriptor());
+		final InputStream in = new FileInputStream(documentData);
 		final boolean[] pipeFinished = new boolean[] {false};
 		Thread dataStream = new Thread(new Runnable()
 		{
@@ -290,40 +317,39 @@ public class Cups
 		params.add(PROOT);
 		params.add(LP);
 		params.add("-d");
-		params.add(job.getInfo().getPrinterId().getLocalId());
+		params.add(printer);
 		params.add("-n");
-		params.add(String.valueOf(job.getInfo().getCopies()));
+		params.add(String.valueOf(copies));
 		params.add("-t");
-		params.add(job.getInfo().getLabel().length() > 0 ? job.getInfo().getLabel() : "PrintJob");
-		if (job.getInfo().getAttributes().getMediaSize() != null && pageSizes.contains(job.getInfo().getAttributes().getMediaSize().getId()))
+		params.add(jobLabel);
+		if (mediaSize != null)
 		{
 			params.add("-o");
-			params.add("media=" + job.getInfo().getAttributes().getMediaSize().getId());
-			if (!job.getInfo().getAttributes().getMediaSize().isPortrait())
+			params.add("media=" + mediaSize.getId());
+			if (!mediaSize.isPortrait())
 			{
 				params.add("-o");
 				params.add("landscape");
 			}
 		}
-		if (job.getInfo().getAttributes().getResolution() != null && resolutions.contains(job.getInfo().getAttributes().getResolution().getId()))
+		if (resolution != null)
 		{
 			params.add("-o");
-			params.add("Resolution=" + job.getInfo().getAttributes().getResolution().getId());
+			params.add("Resolution=" + resolution.getId());
 		}
-		if (job.getInfo().getPages() != null && job.getInfo().getPages().length > 0 &&
-			job.getInfo().getPages()[0].getStart() > 0 && job.getInfo().getPages()[0].getEnd() > 0)
+		if (pages != null)
 		{
 			params.add("-P");
-			String pages = "";
-			for (PageRange r: job.getInfo().getPages())
+			String pagesStr = "";
+			for (PageRange r: pages)
 			{
-				if (pages.length() > 0)
-					pages = pages + ",";
-				pages += String.valueOf(r.getStart() + 1);
+				if (pagesStr.length() > 0)
+					pagesStr = pagesStr + ",";
+				pagesStr += String.valueOf(r.getStart() + 1);
 				if (r.getStart() != r.getEnd())
-					pages += "-" + String.valueOf(r.getEnd() + 1);
+					pagesStr += "-" + String.valueOf(r.getEnd() + 1);
 			}
-			params.add(pages);
+			params.add(pagesStr);
 		}
 		// if (job.getInfo().getAttributes().getMinMargins() != null) // Not supported yet
 		params.add("/" + PIPE);
@@ -359,9 +385,12 @@ public class Cups
 		catch(Exception e)
 		{
 		}
-		Log.d(TAG, "Printing document: completing job");
-		job.complete();
-		Log.d(TAG, "Printing document: completed job");
+		String ret = "";
+		if (lp.out.length > 0 && lp.out[0].startsWith("request id is "))
+		{
+			ret = lp.out[0].substring("request id is ".length()).trim().split("\\s+")[0];
+		}
+		return ret;
 	}
 
 	synchronized static Map<String, String> getPrinterModels(Context p)

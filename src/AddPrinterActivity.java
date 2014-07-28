@@ -195,6 +195,7 @@ public class AddPrinterActivity extends Activity
 
 		name = new EditText(this);
 		name.setHint(R.string.name_hint);
+		name.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		layout.addView(name);
 
 		text = new TextView(this);
@@ -204,6 +205,7 @@ public class AddPrinterActivity extends Activity
 
 		server = new EditText(this);
 		server.setHint(R.string.server_hint);
+		server.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		layout.addView(server);
 
 		text = new TextView(this);
@@ -213,6 +215,7 @@ public class AddPrinterActivity extends Activity
 
 		printer = new EditText(this);
 		printer.setHint(R.string.printer_hint);
+		printer.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		layout.addView(printer);
 
 		text = new TextView(this);
@@ -223,6 +226,7 @@ public class AddPrinterActivity extends Activity
 		model = new EditText(this);
 		model.setHint(R.string.model_button_reading);
 		model.setEnabled(false);
+		model.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		model.addTextChangedListener(new TextWatcher()
 		{
 			public void afterTextChanged(Editable s)
@@ -309,6 +313,7 @@ public class AddPrinterActivity extends Activity
 
 		domain = new EditText(this);
 		domain.setHint(R.string.domain_hint);
+		domain.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		layout.addView(domain);
 
 		text = new TextView(this);
@@ -318,6 +323,7 @@ public class AddPrinterActivity extends Activity
 
 		user = new EditText(this);
 		user.setHint(R.string.user_hint);
+		user.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		layout.addView(user);
 
 		text = new TextView(this);
@@ -327,7 +333,7 @@ public class AddPrinterActivity extends Activity
 
 		password = new EditText(this);
 		password.setHint(R.string.password_hint);
-		password.setInputType(InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
 		password.setTransformationMethod(PasswordTransformationMethod.getInstance());
 		layout.addView(password);
 
