@@ -295,12 +295,6 @@ public class CupsPrintService extends PrintService
 		HashSet<String> pageSizes = new HashSet(Arrays.asList(options.containsKey("PageSize") ? options.get("PageSize") : new String[] {"A4", "Letter"}));
 		HashSet<String> resolutions = new HashSet(Arrays.asList(options.containsKey("Resolution") ? options.get("Resolution") : new String[] {}));
 
-		if (job.isQueued() && !job.isStarted())
-		{
-			boolean started = job.start();
-			Log.d(TAG, "Print job not started, starting job: " + started);
-		}
-
 		boolean landscape = false;
 		String mediaSize = "A4";
 		if (job.getInfo().getAttributes().getMediaSize() != null)
@@ -314,10 +308,14 @@ public class CupsPrintService extends PrintService
 			landscape = !job.getInfo().getAttributes().getMediaSize().isPortrait();
 		}
 
+		if (job.isQueued() && !job.isStarted())
+			job.start();
+
 		String[] jobId = Cups.printDocument(
 							this,
+							job,
 							job.getInfo().getPrinterId().getLocalId(),
-							job.getDocument().getData().getFileDescriptor(),
+							//job.getDocument().getData().getFileDescriptor(),
 							job.getInfo().getLabel().length() > 0 ? job.getInfo().getLabel() : "PrintJob",
 							job.getInfo().getCopies(),
 							mediaSize,

@@ -291,8 +291,9 @@ public class Cups
 	}
 
 	synchronized static String[] printDocument(	final Context p,
+												final android.printservice.PrintJob job,
 												final String printer,
-												final FileDescriptor documentData,
+												//final FileDescriptor documentData,
 												final String jobLabel,
 												int copies,
 												final String mediaSize,
@@ -303,15 +304,15 @@ public class Cups
 		updateDns(p);
 		final String[] ret = new String[] { "", "" };
 		final String PIPE = "document.pdf";
-		//new Proc(new String[] {PROOT, "/usr/bin/mkfifo", "-m", "600", "/" + PIPE}, chrootPath(p));
-		final InputStream in = new FileInputStream(documentData);
 		File pipeFile = new File(chrootPath(p), PIPE);
+		pipeFile.delete();
 		OutputStream out = null;
 		try
 		{
 			Log.d(TAG, "Printing document: copying data to " + PIPE);
-			pipeFile.delete();
 			out = new FileOutputStream(pipeFile);
+			// We have to call job.getDocument().getData() right before we're starting to read from this file, otherwise we'll get crash inside PrintSpoolerService
+			InputStream in = new FileInputStream(job.getDocument().getData().getFileDescriptor());
 			int len = copyStream(in, out);
 			Log.d(TAG, "Printing document: finished copying data to pipe: " + len + " bytes");
 		}
@@ -329,6 +330,7 @@ public class Cups
 			}
 			return ret;
 		}
+
 		ArrayList<String> params = new ArrayList<String>();
 		params.add(PROOT);
 		params.add(LP);
