@@ -102,6 +102,7 @@ public class MainActivity extends Activity
 	private Button advancedInterface = null;
 	private boolean destroyed = false;
 	private boolean jobsThreadStarted = false;
+	private boolean jobsThreadPaused = false;
 	private String[] printJobs = new String[0];
 	private Semaphore printJobsUpdate = new Semaphore(0);
 
@@ -128,6 +129,13 @@ public class MainActivity extends Activity
 		super.onStart();
 		if (!Installer.unpacking)
 			enableSettingsButton();
+		jobsThreadPaused = false;
+	}
+
+	@Override protected void onStop()
+	{
+		super.onStop();
+		jobsThreadPaused = true;
 	}
 
 	void reinitUI()
@@ -137,7 +145,6 @@ public class MainActivity extends Activity
 		layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
 		
 		text = new TextView(this);
-		//text.setMaxLines();
 		text.setText(R.string.init);
 		text.setText("Initializing");
 		text.setTextSize(20);
@@ -420,6 +427,18 @@ public class MainActivity extends Activity
 				}
 				catch (Exception e)
 				{
+				}
+				while (jobsThreadPaused)
+				{
+					if (destroyed)
+						return;
+					try
+					{
+						printJobsUpdate.tryAcquire(4, TimeUnit.SECONDS);
+					}
+					catch (Exception e)
+					{
+					}
 				}
 				final StringBuffer str = new StringBuffer();
 				String[] printers = Cups.getPrinters(MainActivity.this);
