@@ -39,6 +39,9 @@
 	<string name="view_network_button_scan_again">Scan again</string>
 	<string name="login_password_hint">Enter login and password to view hidden shared printers</string>
 	<string name="advanced_interface_button">Advanced interface</string>
+	<string name="cancel_job">Cancel print job</string>
+	<string name="no_active_jobs">No active print jobs</string>
+	<string name="restart_printing">Resume all print jobs</string>
 
 	<string name="name_desc">Printer description</string>
 	<string name="name_hint">Printer in kitchen</string>
@@ -59,7 +62,7 @@
 	<string name="user_desc">Username or login</string>
 	<string name="user_hint">john.smith</string>
 	<string name="password_desc">Password</string>
-	<string name="password_hint">No spaces allowed in password</string>
+	<string name="password_hint">No space or @ allowed in password</string>
 
 	<string name="error_empty_fields">Please specify printer description, server, share, and model</string>
 

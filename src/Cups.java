@@ -95,12 +95,16 @@ public class Cups
 	static String LPOPTIONS = "/usr/bin/lpoptions";
 	static String LPINFO = "/usr/sbin/lpinfo";
 	static String LPADMIN = "/usr/sbin/lpadmin";
+	static String CANCEL = "/usr/bin/cancel";
+	static String CUPSACCEPT = "/usr/sbin/cupsaccept";
+	static String CUPSENABLE = "/usr/sbin/cupsenable";
 	static String DBUS = "/usr/bin/dbus-daemon";
 	static Process cupsd = null;
 	static Process dbus = null;
 
-	public static final double PointsToMillimeters = 0.352777778;
+	public static final double PointsToMillimeters = 0.35277777778;
 	public static final double MillimetersToPoints = 1.0 / PointsToMillimeters;
+	public static final double MillimetersToInches = 0.03937007874;
 
 	static File chrootPath(Context p)
 	{
@@ -136,7 +140,7 @@ public class Cups
 		return PrinterInfo.STATUS_BUSY;
 	}
 
-	synchronized static Map<String, String[]> getPrinterJobs(Context p, String printer)
+	synchronized static Map<String, String[]> getPrintJobs(Context p, String printer)
 	{
 		HashMap<String, String[]> ret = new HashMap<String, String[]>();
 		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-l", printer}, chrootPath(p));
@@ -163,6 +167,20 @@ public class Cups
 		if (currentJob != null)
 			ret.put(currentJob, jobAttrs.toArray(new String[0]));
 		return ret;
+	}
+
+	synchronized static void cancelPrintJob(Context p, String job)
+	{
+		Proc pp = new Proc(new String[] {PROOT, CANCEL, job}, chrootPath(p));
+		Log.d(TAG, "Cancel job status: " + pp.status + " output: " + Arrays.toString(pp.out));
+	}
+
+	synchronized static void enablePrinter(Context p, String printer)
+	{
+		Proc pp = new Proc(new String[] {PROOT, CUPSACCEPT, printer}, chrootPath(p));
+		Log.d(TAG, "cupsaccept printer status: " + pp.status + " output: " + Arrays.toString(pp.out));
+		pp = new Proc(new String[] {PROOT, CUPSENABLE, printer}, chrootPath(p));
+		Log.d(TAG, "cupsenable printer status: " + pp.status + " output: " + Arrays.toString(pp.out));
 	}
 
 	synchronized static Map<String, String[]> getPrinterOptions(Context p, String printer)
@@ -222,9 +240,9 @@ public class Cups
 				//Log.d(TAG, "fillMediaSizes: dimensions: " + Arrays.toString(sizes) + " for " + name);
 				if (sizes.length < 2)
 					continue;
-				int w = (int)(Integer.parseInt(sizes[0]) * PointsToMillimeters);
-				int h = (int)(Integer.parseInt(sizes[1]) * PointsToMillimeters);
-				Log.d(TAG, "fillMediaSizes: " + name + " desc '" + descr + "' size " + w + "x" + h);
+				int w = (int)Math.round(Integer.parseInt(sizes[0]) * PointsToMillimeters * MillimetersToInches * 1000.0f);
+				int h = (int)Math.round(Integer.parseInt(sizes[1]) * PointsToMillimeters * MillimetersToInches * 1000.0f);
+				Log.d(TAG, "fillMediaSizes: " + name + " desc '" + descr + "' size " + w + "x" + h + " inches/1000" );
 				mediaSizes.put(name, new PrintAttributes.MediaSize(name, descr, w, h));
 			}
 			in.close();
@@ -263,7 +281,8 @@ public class Cups
 			url = url + workgroup + "/";
 		url = url + host + "/";
 		url = url + printer;
-		new Proc(new String[] {PROOT, LPADMIN, "-p", name, "-v", url, "-m", model, "-E"}, chrootPath(p));
+		Proc pp = new Proc(new String[] {PROOT, LPADMIN, "-p", name, "-v", url, "-m", model, "-o", "printer-error-policy=retry-job", "-E"}, chrootPath(p));
+		Log.d(TAG, "Add printer status: " + pp.status + " output: " + Arrays.toString(pp.out));
 	}
 
 	synchronized static void deletePrinter(Context p, String name)
@@ -271,19 +290,22 @@ public class Cups
 		new Proc(new String[] {PROOT, LPADMIN, "-x", name}, chrootPath(p));
 	}
 
-	synchronized static String printDocument(	final Context p,
+	synchronized static String[] printDocument(	final Context p,
 												final String printer,
 												final FileDescriptor documentData,
 												final String jobLabel,
 												int copies,
-												final PrintAttributes.MediaSize mediaSize,
-												final PrintAttributes.Resolution resolution,
+												final String mediaSize,
+												boolean landscape,
+												final String resolution,
 												final PageRange[] pages )
 	{
+		updateDns(p);
+		final String[] ret = new String[] { "", "" };
 		final String PIPE = "document.pdf";
-		new Proc(new String[] {PROOT, "/usr/bin/mkfifo", "-m", "600", "/" + PIPE}, chrootPath(p));
+		//new Proc(new String[] {PROOT, "/usr/bin/mkfifo", "-m", "600", "/" + PIPE}, chrootPath(p));
 		final InputStream in = new FileInputStream(documentData);
-		final boolean[] pipeFinished = new boolean[] {false};
+		final boolean[] pipeFinished = new boolean[] {false, false};
 		Thread dataStream = new Thread(new Runnable()
 		{
 			public void run()
@@ -300,7 +322,9 @@ public class Cups
 				catch(Exception e)
 				{
 					Log.i(TAG, "Error printing document: " + e.toString());
+					pipeFinished[1] = true;
 					pipeFinished[0] = true;
+					ret[1] += e.toString();
 					try
 					{
 						if (out != null)
@@ -322,20 +346,18 @@ public class Cups
 		params.add(String.valueOf(copies));
 		params.add("-t");
 		params.add(jobLabel);
-		if (mediaSize != null)
+		// Setting media size makes lp break pipe connection, probably it tries to seek data inside the file
+		//params.add("-o");
+		//params.add("media=" + mediaSize);
+		if (landscape)
 		{
 			params.add("-o");
-			params.add("media=" + mediaSize.getId());
-			if (!mediaSize.isPortrait())
-			{
-				params.add("-o");
-				params.add("landscape");
-			}
+			params.add("landscape");
 		}
 		if (resolution != null)
 		{
 			params.add("-o");
-			params.add("Resolution=" + resolution.getId());
+			params.add("Resolution=" + resolution);
 		}
 		if (pages != null)
 		{
@@ -385,10 +407,14 @@ public class Cups
 		catch(Exception e)
 		{
 		}
-		String ret = "";
-		if (lp.out.length > 0 && lp.out[0].startsWith("request id is "))
+		if (pipeFinished[1] || lp.status != 0) // There was an error
 		{
-			ret = lp.out[0].substring("request id is ".length()).trim().split("\\s+")[0];
+			ret[0] = "";
+			ret[1] += Arrays.toString(lp.out);
+		}
+		else if (lp.out.length > 0 && lp.out[0].startsWith("request id is "))
+		{
+			ret[0] = lp.out[0].substring("request id is ".length()).trim().split("\\s+")[0];
 		}
 		return ret;
 	}
@@ -506,6 +532,7 @@ public class Cups
 			auth.delete();
 			return ret.out;
 		}
+		updateDns(p);
 		return new Proc(new String[] {PROOT, "/usr/bin/smbtree", "-N", }, chrootPath(p)).out;
 	}
 

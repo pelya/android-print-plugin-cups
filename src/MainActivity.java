@@ -71,6 +71,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import android.content.pm.ActivityInfo;
 import android.view.Display;
 import android.text.InputType;
@@ -83,25 +84,43 @@ import android.app.AlertDialog;
 import android.widget.ScrollView;
 import android.content.DialogInterface;
 import android.net.Uri;
+import java.util.*;
 
 
 public class MainActivity extends Activity
 {
+	private ScrollView scroll = null;
 	private LinearLayout layout = null;
 	private TextView text = null;
+	private Button cancelJob = null;
+	private Button reenablePrinters = null;
 	private Button openSettings = null;
 	private Button addPrinter = null;
 	private Button deletePrinter = null;
 	private Button viewNetwork = null;
 	private String[] networkTree = null;
 	private Button advancedInterface = null;
+	private boolean destroyed = false;
+	private boolean jobsThreadStarted = false;
+	private String[] printJobs = new String[0];
+	private Semaphore printJobsUpdate = new Semaphore(0);
 
 	@Override protected void onCreate(Bundle savedInstanceState)
 	{
+		destroyed = false;
+		jobsThreadStarted = false;
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate");
 		reinitUI();
 		Installer.unpackData(this, text);
+	}
+
+	@Override synchronized protected void onDestroy()
+	{
+		Log.d(TAG, "onDestroy");
+		destroyed = true;
+		jobsThreadStarted = false;
+		super.onDestroy();
 	}
 
 	@Override protected void onStart()
@@ -118,13 +137,17 @@ public class MainActivity extends Activity
 		layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
 		
 		text = new TextView(this);
-		text.setMaxLines(100);
+		//text.setMaxLines();
 		text.setText(R.string.init);
 		text.setText("Initializing");
 		text.setTextSize(20);
 		text.setPadding(20, 20, 20, 50);
 		layout.addView(text);
-		setContentView(layout);
+
+		scroll = new ScrollView(this);
+		scroll.addView(layout);
+
+		setContentView(scroll);
 	}
 
 	void enableSettingsButton()
@@ -135,6 +158,12 @@ public class MainActivity extends Activity
 			{
 				reinitUI();
 				enableSettingsButtonPriv();
+				if (!jobsThreadStarted)
+				{
+					updateActiveJobs();
+					printJobsUpdate.release();
+				}
+				jobsThreadStarted = true;
 			}
 		});
 	}
@@ -142,6 +171,68 @@ public class MainActivity extends Activity
 	private void enableSettingsButtonPriv()
 	{
 		text.setText(CupsPrintService.pluginEnabled ? R.string.service_running : R.string.enable_plugin);
+
+		cancelJob = new Button(this);
+		cancelJob.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		cancelJob.setText(R.string.cancel_job);
+		cancelJob.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				if (printJobs == null)
+					return;
+				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				builder.setTitle(R.string.cancel_job);
+				builder.setItems(printJobs, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, final int which)
+					{
+						dialog.dismiss();
+						if (printJobs.length > which) // Just in case jobs list changes while user is waiting
+							Cups.cancelPrintJob(MainActivity.this, printJobs[which]);
+						cancelJob.setEnabled(false);
+						printJobsUpdate.release();
+					}
+				});
+				builder.setPositiveButton(R.string.close, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface d, int s)
+					{
+						d.dismiss();
+					}
+				});
+				AlertDialog alert = builder.create();
+				alert.setOwnerActivity(MainActivity.this);
+				alert.show();
+			}
+		});
+		cancelJob.setEnabled(false);
+		layout.addView(cancelJob);
+
+		reenablePrinters = new Button(this);
+		reenablePrinters.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		reenablePrinters.setText(R.string.restart_printing);
+		reenablePrinters.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				reenablePrinters.setVisibility(View.GONE);
+				new Thread(new Runnable()
+				{
+					public void run()
+					{
+						String[] printers = Cups.getPrinters(MainActivity.this);
+						for (String p: printers)
+						{
+							Cups.enablePrinter(MainActivity.this, p);
+						}
+					}
+				}).start();
+			}
+		});
+		reenablePrinters.setVisibility(View.GONE);
+		layout.addView(reenablePrinters);
+
 		openSettings = new Button(this);
 		openSettings.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 		openSettings.setText(getResources().getString(CupsPrintService.pluginEnabled ? R.string.settings_button : R.string.enable_plugin_button));
@@ -289,10 +380,8 @@ public class MainActivity extends Activity
 		layout.addView(advancedInterface);
 	}
 
-	public void updateNetworkTree()
+	private void updateNetworkTree()
 	{
-		if (viewNetwork == null)
-			return;
 		viewNetwork.setEnabled(false);
 		viewNetwork.setText(getResources().getString(R.string.view_network_button_scanning));
 		new Thread(new Runnable()
@@ -300,16 +389,83 @@ public class MainActivity extends Activity
 			public void run()
 			{
 				networkTree = Cups.getNetworkTree(MainActivity.this, "", "", "");
-				runOnUiThread(new Runnable()
+				synchronized(MainActivity.this)
 				{
-					public void run()
+					if (destroyed)
+						return;
+					runOnUiThread(new Runnable()
 					{
-						if (viewNetwork == null)
-							return;
-						viewNetwork.setEnabled(true);
-						viewNetwork.setText(getResources().getString(R.string.view_network_button));
+						public void run()
+						{
+							if (viewNetwork == null || destroyed)
+								return;
+							viewNetwork.setEnabled(true);
+							viewNetwork.setText(getResources().getString(R.string.view_network_button));
+						}
+					});
+				};
+			}
+		}).start();
+	}
+
+	private void updateActiveJobs()
+	{
+		new Thread(new Runnable()
+		{
+			public void run()
+			{
+				try
+				{
+					printJobsUpdate.tryAcquire(4, TimeUnit.SECONDS);
+				}
+				catch (Exception e)
+				{
+				}
+				final StringBuffer str = new StringBuffer();
+				String[] printers = Cups.getPrinters(MainActivity.this);
+				final ArrayList<String> jobList = new ArrayList<String>();
+				for (String p: printers)
+				{
+					Map<String, String[]> jobs = Cups.getPrintJobs(MainActivity.this, p);
+					for (String j: jobs.keySet())
+					{
+						str.append(j + ":\n");
+						jobList.add(j);
+						for (String stat: jobs.get(j))
+							str.append(stat + "\n");
 					}
-				});
+				}
+				Log.d(TAG, "updateActiveJobs: updating UI");
+				synchronized(MainActivity.this)
+				{
+					if (destroyed)
+						return;
+					runOnUiThread(new Runnable()
+					{
+						public void run()
+						{
+							if (destroyed)
+								return;
+							printJobs = jobList.toArray(new String[0]);
+							if (str.toString().length() == 0)
+							{
+								cancelJob.setEnabled(false);
+								text.setText(R.string.no_active_jobs);
+								reenablePrinters.setVisibility(View.GONE);
+							}
+							else
+							{
+								text.setText(str.toString());
+								cancelJob.setEnabled(true);
+								if (str.toString().contains("Alerts: printer-stopped"))
+									reenablePrinters.setVisibility(View.VISIBLE);
+								else
+									reenablePrinters.setVisibility(View.GONE);
+							}
+							updateActiveJobs();
+						}
+					});
+				}
 			}
 		}).start();
 	}

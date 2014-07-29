@@ -122,7 +122,7 @@ public class Installer
 
 		StatFs storage = new StatFs(p.getFilesDir().getPath());
 		long avail = (long)storage.getAvailableBlocks() * storage.getBlockSize() / 1024 / 1024;
-		long needed = 500;
+		long needed = 600;
 		Log.i(TAG, "Available free space: " + avail + " Mb required: " + needed + " Mb");
 		if (avail < needed)
 		{

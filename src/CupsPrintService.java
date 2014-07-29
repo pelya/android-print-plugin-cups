@@ -211,7 +211,7 @@ public class CupsPrintService extends PrintService
 				}
 				try
 				{
-					sem.tryAcquire(3, TimeUnit.SECONDS);
+					sem.tryAcquire(4, TimeUnit.SECONDS);
 				}
 				catch(Exception e)
 				{
@@ -301,24 +301,45 @@ public class CupsPrintService extends PrintService
 			Log.d(TAG, "Print job not started, starting job: " + started);
 		}
 
-		Cups.printDocument(	this,
+		boolean landscape = false;
+		String mediaSize = "A4";
+		if (job.getInfo().getAttributes().getMediaSize() != null)
+		{
+			if (pageSizes.contains(job.getInfo().getAttributes().getMediaSize().getId()))
+				mediaSize = job.getInfo().getAttributes().getMediaSize().getId();
+			else
+				mediaSize = "Custom." + 
+					Math.round(job.getInfo().getAttributes().getMediaSize().asPortrait().getWidthMils() / 1000.0 / Cups.MillimetersToInches) + "x" +
+					Math.round(job.getInfo().getAttributes().getMediaSize().asPortrait().getHeightMils() / 1000.0 / Cups.MillimetersToInches) + "mm";
+			landscape = !job.getInfo().getAttributes().getMediaSize().isPortrait();
+		}
+
+		String[] jobId = Cups.printDocument(
+							this,
 							job.getInfo().getPrinterId().getLocalId(),
 							job.getDocument().getData().getFileDescriptor(),
 							job.getInfo().getLabel().length() > 0 ? job.getInfo().getLabel() : "PrintJob",
 							job.getInfo().getCopies(),
-							job.getInfo().getAttributes().getMediaSize() != null &&
-							pageSizes.contains(job.getInfo().getAttributes().getMediaSize().getId()) ?
-							job.getInfo().getAttributes().getMediaSize() : null,
+							mediaSize,
+							landscape,
 							job.getInfo().getAttributes().getResolution() != null &&
 							resolutions.contains(job.getInfo().getAttributes().getResolution().getId()) ?
-							job.getInfo().getAttributes().getResolution() : null,
+							job.getInfo().getAttributes().getResolution().getId() : null,
 							job.getInfo().getPages() != null && job.getInfo().getPages().length > 0 &&
 							job.getInfo().getPages()[0].getStart() > 0 && job.getInfo().getPages()[0].getEnd() > 0 ?
 							job.getInfo().getPages() : null );
 
-		// TODO: do not complete job immediately, use getPrinterJobs() and report job actual status back to Android
-		boolean completed = job.complete();
-		Log.d(TAG, "Printing document: job completed: " + completed);
+		if (jobId[0].length() > 0)
+		{
+			// TODO: do not complete job immediately, use getPrinterJobs() and report job actual status back to Android
+			boolean completed = job.complete();
+			Log.d(TAG, "Printing document: job completed: " + completed + " job ID " + jobId[0]);
+		}
+		else
+		{
+			job.fail(jobId[1]);
+			Log.d(TAG, "Printing document: job failed: " + jobId[1]);
+		}
 	}
 
 	@Override public void onRequestCancelPrintJob(android.printservice.PrintJob printJob)
