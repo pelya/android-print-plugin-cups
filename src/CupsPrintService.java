@@ -332,20 +332,23 @@ public class CupsPrintService extends PrintService
 		if (jobId[0].length() > 0)
 		{
 			// TODO: do not complete job immediately, use getPrinterJobs() and report job actual status back to Android
-			boolean completed = job.complete();
-			Log.d(TAG, "Printing document: job completed: " + completed + " job ID " + jobId[0]);
+			Log.d(TAG, "Printing document: job completed: job ID " + jobId[0]);
+			job.setTag(jobId[0]);
+			job.complete();
 		}
 		else
 		{
-			job.fail(jobId[1]);
 			Log.d(TAG, "Printing document: job failed: " + jobId[1]);
+			job.fail(jobId[1]);
 		}
 	}
 
-	@Override public void onRequestCancelPrintJob(android.printservice.PrintJob printJob)
+	@Override public void onRequestCancelPrintJob(android.printservice.PrintJob job)
 	{
 		Log.d(TAG, "=============== onRequestCancelPrintJob() ===============");
-		Log.i(TAG, "=============== Cancelling a print job is not supported yet ===============");
+		if (job.getTag() != null && job.getTag().length() > 0)
+			Cups.cancelPrintJob(this, job.getTag());
+		job.cancel();
 	}
 
 	public static final String TAG = "CupsPrintService";

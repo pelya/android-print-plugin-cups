@@ -305,38 +305,30 @@ public class Cups
 		final String PIPE = "document.pdf";
 		//new Proc(new String[] {PROOT, "/usr/bin/mkfifo", "-m", "600", "/" + PIPE}, chrootPath(p));
 		final InputStream in = new FileInputStream(documentData);
-		final boolean[] pipeFinished = new boolean[] {false, false};
-		Thread dataStream = new Thread(new Runnable()
+		File pipeFile = new File(chrootPath(p), PIPE);
+		OutputStream out = null;
+		try
 		{
-			public void run()
+			Log.d(TAG, "Printing document: copying data to " + PIPE);
+			pipeFile.delete();
+			out = new FileOutputStream(pipeFile);
+			int len = copyStream(in, out);
+			Log.d(TAG, "Printing document: finished copying data to pipe: " + len + " bytes");
+		}
+		catch(Exception e)
+		{
+			Log.i(TAG, "Error printing document: " + e.toString());
+			ret[1] += e.toString();
+			try
 			{
-				OutputStream out = null;
-				try
-				{
-					Log.d(TAG, "Printing document: copying data to pipe");
-					out = new FileOutputStream(new File(chrootPath(p), PIPE));
-					int len = copyStream(in, out);
-					Log.d(TAG, "Printing document: finished copying data to pipe: " + len + " bytes");
-					pipeFinished[0] = true;
-				}
-				catch(Exception e)
-				{
-					Log.i(TAG, "Error printing document: " + e.toString());
-					pipeFinished[1] = true;
-					pipeFinished[0] = true;
-					ret[1] += e.toString();
-					try
-					{
-						if (out != null)
-							out.close();
-					}
-					catch(Exception ee)
-					{
-					}
-				}
+				if (out != null)
+					out.close();
 			}
-		});
-		dataStream.start();
+			catch(Exception ee)
+			{
+			}
+			return ret;
+		}
 		ArrayList<String> params = new ArrayList<String>();
 		params.add(PROOT);
 		params.add(LP);
@@ -346,9 +338,8 @@ public class Cups
 		params.add(String.valueOf(copies));
 		params.add("-t");
 		params.add(jobLabel);
-		// Setting media size makes lp break pipe connection, probably it tries to seek data inside the file
-		//params.add("-o");
-		//params.add("media=" + mediaSize);
+		params.add("-o");
+		params.add("media=" + mediaSize);
 		if (landscape)
 		{
 			params.add("-o");
@@ -379,35 +370,8 @@ public class Cups
 		Log.i(TAG, "Printing document command: " + Arrays.toString(params.toArray(new String[0])));
 		Proc lp = new Proc(params.toArray(new String[0]), chrootPath(p));
 		Log.i(TAG, "Printing document finished: status: " + lp.status + " msg: " + Arrays.toString(lp.out));
-		if (lp.status != 0 && !pipeFinished[0])
-		{
-			// lp process did not read from pipe at all, read everything from pipe to unblock the thread
-			try
-			{
-				Thread.sleep(300);
-				if (!pipeFinished[0])
-				{
-					Log.i(TAG, "Printing document failed: emptying pipe");
-					InputStream in2 = new FileInputStream(new File(chrootPath(p), PIPE));
-					byte[] buf = new byte[16384];
-					while (in2.read(buf) >= 0)
-					{
-					}
-					in2.close();
-				}
-			}
-			catch(Exception e)
-			{
-			}
-		}
-		try
-		{
-			dataStream.join();
-		}
-		catch(Exception e)
-		{
-		}
-		if (pipeFinished[1] || lp.status != 0) // There was an error
+		pipeFile.delete();
+		if (lp.status != 0) // There was an error
 		{
 			ret[0] = "";
 			ret[1] += Arrays.toString(lp.out);
