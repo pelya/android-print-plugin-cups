@@ -368,7 +368,7 @@ public class AddPrinterActivity extends Activity
 					{
 						Cups.addPrinter(AddPrinterActivity.this, name.getText().toString(), server.getText().toString(),
 										printer.getText().toString(), modelList.get(model.getText().toString()),
-										domain.getText().toString(), user.getText().toString(), password.getText().toString());
+										domain.getText().toString().toUpperCase(), user.getText().toString(), password.getText().toString());
 						progressCircle.dismiss();
 						finish();
 					}

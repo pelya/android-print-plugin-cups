@@ -69,7 +69,7 @@
 	<string name="model_button_clear">Select different model</string>
 	<string name="model_button_reading">Reading model database, please wait</string>
 	<string name="no_models_found">No such models found</string>
-	<string name="domain_desc">WORKGROUP or DOMAIN, usually upper-case</string>
+	<string name="domain_desc">WORKGROUP or DOMAIN</string>
 	<string name="domain_hint">workgroup</string>
 	<string name="user_desc">Username or login</string>
 	<string name="user_hint">john.smith</string>

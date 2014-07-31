@@ -157,6 +157,7 @@ public class Installer
 				{
 					File obbFile = new File(p.getExternalFilesDir(null).getParentFile().getParentFile().getParentFile(),
 												"obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb");
+					Log.i(TAG, "OBB file path: " + obbFile.getAbsolutePath() + " exists " + obbFile.exists() + " length " + obbFile.length());
 					if (!obbFile.exists() || obbFile.length() < 256)
 						throw new IOException("Cannot find data file: " + obbFile.getAbsolutePath());
 					Proc pp = new Proc(new String[] {busybox, "tar", "xJf",
