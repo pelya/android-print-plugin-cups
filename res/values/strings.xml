@@ -26,14 +26,14 @@
 
 	<string name="not_implemented_yet">This dialog is not implemented yet. But you can do it yourself - click the button below and grab the source code.</string>
 	<string name="not_implemented_advanced_options">
-		In the future this dialog will have options for:
-		&#xA;Print preview
-		&#xA;Page margins
-		&#xA;Double-sided printing
-		&#xA;Collate copies
-		&#xA;Paper type
-		&#xA;Printer tray select
-		&#xA;Print resolution
+		\nIn the future this dialog will have options for:
+		\nPrint preview
+		\nPage margins
+		\nDouble-sided printing
+		\nCollate copies
+		\nPaper type
+		\nPrinter tray select
+		\nPrint resolution
 	</string>
 
 	<string name="sources_url">https://github.com/pelya/android-print-plugin-cups</string>

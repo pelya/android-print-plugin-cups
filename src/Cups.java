@@ -370,6 +370,9 @@ public class Cups
 			}
 			params.add(pagesStr);
 		}
+		// Chrome tends to pass bigger image than our paper size, making printer waste two pages, so we'll resize it to fit
+		params.add("-o");
+		params.add("fit-to-page");
 		// if (job.getInfo().getAttributes().getMinMargins() != null) // Not supported yet
 		params.add("/" + PIPE);
 

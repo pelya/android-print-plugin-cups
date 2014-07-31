@@ -333,7 +333,7 @@ public class CupsPrintService extends PrintService
 		if (jobId[0].length() > 0)
 		{
 			// TODO: do not complete job immediately, use getPrinterJobs() and report job actual status back to Android
-			Log.d(TAG, "Printing document: job completed: job ID " + jobId[0]);
+			Log.d(TAG, "Printing document: job started: job ID " + jobId[0]);
 			job.setTag(jobId[0]);
 			PrintJobs.trackJob(job);
 		}

@@ -98,13 +98,11 @@ public class PrintJobs
 	synchronized public static void init(final CupsPrintService c)
 	{
 		if (context != null)
-		{
 			Log.e(TAG, "Error: Already initialized with context " + context + ", new context " + c);
-			return;
-		}
 		destroyed = false;
 		context = c;
 		mainThread = new Handler(context.getMainLooper());
+		Log.d(TAG, "Creating jobs tracking thread");
 		new Thread(new Runnable()
 		{
 			public void run()
@@ -116,12 +114,14 @@ public class PrintJobs
 
 	synchronized public static void destroy()
 	{
+		Log.d(TAG, "Destroying jobs tracking thread");
 		destroyed = true;
 	}
 
 	synchronized public static void trackJob(final android.printservice.PrintJob job)
 	{
 		trackedJobs.put(job, new String[] {job.getTag(), job.getInfo().getPrinterId().getLocalId()});
+		Log.d(TAG, "Started tracking job: " + job.getTag() + " printer " + job.getInfo().getPrinterId().getLocalId());
 	}
 
 	synchronized public static void stopTrackingJob(final android.printservice.PrintJob job)
@@ -133,7 +133,7 @@ public class PrintJobs
 	{
 		for (String s: jobInfo)
 		{
-			if (s.startsWith("Status:"))
+			if (s.startsWith("Status:") && s.length() > "Status:".length() + 1)
 				return s.substring("Status:".length() + 1);
 		}
 		return "";
@@ -143,7 +143,7 @@ public class PrintJobs
 	{
 		for (String s: jobInfo)
 		{
-			if (s.equals("Alerts: job-completed-successfully"))
+			if (s.equals("Alerts: job-completed-successfully") || s.equals("Alerts: processing-to-stop-point"))
 				return true;
 		}
 		return false;
