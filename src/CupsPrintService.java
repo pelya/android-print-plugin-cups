@@ -94,6 +94,7 @@ public class CupsPrintService extends PrintService
 		Log.d(TAG, "onCreate()");
 		super.onCreate();
 		pluginEnabled = true;
+		PrintJobs.init(this);
 	}
 
 	@Override public void onDestroy()
@@ -101,6 +102,7 @@ public class CupsPrintService extends PrintService
 		Log.d(TAG, "onDestroy()");
 		super.onDestroy();
 		pluginEnabled = false;
+		PrintJobs.destroy();
 	}
 
 	@Override public void onConnected()
@@ -131,11 +133,11 @@ public class CupsPrintService extends PrintService
 		private boolean shouldExit = false;
 		private HashSet<PrinterId> trackedPrinters = new HashSet<PrinterId>();
 		private Semaphore sem = new Semaphore(0);
-		private Handler handler = null;
+		private Handler mainThread = null;
 
 		CupsPrinterDiscoverySession()
 		{
-			handler = new Handler(CupsPrintService.this.getMainLooper());
+			mainThread = new Handler(CupsPrintService.this.getMainLooper());
 			new Thread(this).start();
 		}
 
@@ -147,6 +149,7 @@ public class CupsPrintService extends PrintService
 		}
 		public synchronized void onStartPrinterDiscovery(List<PrinterId> priorityList)
 		{
+			// TODO: cache printer info, because invoking commandline tools is slow
 			Log.d(TAG, "onStartPrinterDiscovery()");
 			final ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
 			for (String pr: Cups.getPrinters(CupsPrintService.this))
@@ -200,7 +203,7 @@ public class CupsPrintService extends PrintService
 							ret.add(getPrinterInfoFull(id));
 						}
 						Log.d(TAG, "onStartPrinterTracking(): finishing from discover thread");
-						handler.post(new Runnable()
+						mainThread.post(new Runnable()
 						{
 							public void run()
 							{
@@ -332,7 +335,7 @@ public class CupsPrintService extends PrintService
 			// TODO: do not complete job immediately, use getPrinterJobs() and report job actual status back to Android
 			Log.d(TAG, "Printing document: job completed: job ID " + jobId[0]);
 			job.setTag(jobId[0]);
-			job.complete();
+			PrintJobs.trackJob(job);
 		}
 		else
 		{
@@ -344,6 +347,7 @@ public class CupsPrintService extends PrintService
 	@Override public void onRequestCancelPrintJob(android.printservice.PrintJob job)
 	{
 		Log.d(TAG, "=============== onRequestCancelPrintJob() ===============");
+		PrintJobs.stopTrackingJob(job);
 		if (job.getTag() != null && job.getTag().length() > 0)
 			Cups.cancelPrintJob(this, job.getTag());
 		job.cancel();

@@ -83,6 +83,7 @@ import android.provider.Settings;
 import android.app.AlertDialog;
 import android.widget.ScrollView;
 import android.content.DialogInterface;
+import android.widget.Toast;
 import android.net.Uri;
 import java.util.*;
 
@@ -100,6 +101,7 @@ public class MainActivity extends Activity
 	private Button viewNetwork = null;
 	private String[] networkTree = null;
 	private Button advancedInterface = null;
+	private Button stopService = null;
 	private boolean destroyed = false;
 	private boolean jobsThreadStarted = false;
 	private boolean jobsThreadPaused = false;
@@ -385,6 +387,36 @@ public class MainActivity extends Activity
 			}
 		});
 		layout.addView(advancedInterface);
+
+		stopService = new Button(this);
+		stopService.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		stopService.setText(getResources().getString(R.string.stop_print_service));
+		stopService.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				Toast.makeText(MainActivity.this, R.string.service_restarted_automatically, Toast.LENGTH_LONG).show();
+				finish();
+				new Thread(new Runnable()
+				{
+					public void run()
+					{
+						try
+						{
+							Thread.sleep(4000);
+						}
+						catch (Exception ee)
+						{
+						}
+						String busybox = new File(getFilesDir(), "busybox").getAbsolutePath();
+						new Proc(new String[] {busybox, "setsid", "sh", "-c", "cd /proc/ ; for f in * ; do [ $f = $$ ] || kill -9 $f ; done"}, getFilesDir());
+						Cups.stopCupsDaemon(MainActivity.this);
+						System.exit(0);
+					}
+				}).start();
+			}
+		});
+		layout.addView(stopService);
 	}
 
 	private void updateNetworkTree()
@@ -445,7 +477,7 @@ public class MainActivity extends Activity
 				final ArrayList<String> jobList = new ArrayList<String>();
 				for (String p: printers)
 				{
-					Map<String, String[]> jobs = Cups.getPrintJobs(MainActivity.this, p);
+					Map<String, String[]> jobs = Cups.getPrintJobs(MainActivity.this, p, false);
 					for (String j: jobs.keySet())
 					{
 						str.append(j + ":\n");

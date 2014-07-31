@@ -143,7 +143,7 @@ public class Installer
 
 			try
 			{
-				InputStream archiveAssets = p.getAssets().open("dist-cups-wheezy.tar.xz");
+				InputStream archiveAssets = p.getAssets().open("dist-cups-jessie.tar.xz");
 				Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
 				Cups.copyStream(archiveAssets, proc.getOutputStream());
 				int status = proc.waitFor();
@@ -157,15 +157,20 @@ public class Installer
 				{
 					File obbFile = new File(p.getExternalFilesDir(null).getParentFile().getParentFile().getParentFile(),
 												"obb/" + p.getPackageName() + "/main.100." + p.getPackageName() + ".obb");
-					if (!obbFile.exists())
+					if (!obbFile.exists() || obbFile.length() < 256)
 						throw new IOException("Cannot find data file: " + obbFile.getAbsolutePath());
-					new Proc(new String[] {busybox, "tar", "xJf",
+					Proc pp = new Proc(new String[] {busybox, "tar", "xJf",
 								obbFile.getAbsolutePath()},
 								p.getFilesDir());
+					BufferedWriter clearObb = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(obbFile), "utf-8"));
+					clearObb.write("Unpacked and cleared\n");
+					clearObb.close();
+					if (pp.status != 0)
+						throw new IOException("Cannot extract data file: " + obbFile.getAbsolutePath());
 				}
-				catch(Exception ee)
+				catch (Exception ee)
 				{
-					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/dist-cups-wheezy.tar.xz/download";
+					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/dist-cups-jessie.tar.xz/download";
 					Log.i(TAG, "Error unpacking data from OBB: " + e.toString());
 					Log.i(TAG, "No data archive in OBB, downloading from web: " + ARCHIVE_URL);
 					setText(p, text, p.getResources().getString(R.string.downloading_web));
@@ -183,6 +188,7 @@ public class Installer
 			stream = p.getAssets().open("cupsd.conf");
 			out = new FileOutputStream(new File(Cups.chrootPath(p), "etc/cups/cupsd.conf"));
 			Cups.copyStream(stream, out);
+			new Proc(new String[] {busybox, "chmod", "-R", "go+rX", "usr/share/cups/doc-root"}, p.getFilesDir());
 
 			Log.i(TAG, "Extracting data finished");
 		}

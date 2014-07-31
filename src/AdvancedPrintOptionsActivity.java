@@ -88,6 +88,7 @@ public class AdvancedPrintOptionsActivity extends Activity
 	private TextView text = null;
 	private Button sourcesUrl = null;
 	private Button close = null;
+	private TextView text2 = null;
 
 	private PrintJobInfo.Builder jobInfo;
 
@@ -103,8 +104,6 @@ public class AdvancedPrintOptionsActivity extends Activity
 		layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
 		
 		text = new TextView(this);
-		text.setMaxLines(100);
-		text.setText(R.string.init);
 		text.setText(getResources().getString(R.string.not_implemented_yet));
 		text.setTextSize(20);
 		text.setPadding(20, 20, 20, 50);
@@ -136,6 +135,12 @@ public class AdvancedPrintOptionsActivity extends Activity
 			}
 		});
 		layout.addView(close);
+
+		text2 = new TextView(this);
+		text2.setText(getResources().getString(R.string.not_implemented_advanced_options));
+		text2.setTextSize(20);
+		text2.setPadding(20, 20, 20, 50);
+		layout.addView(text2);
 
 		setContentView(layout);
 

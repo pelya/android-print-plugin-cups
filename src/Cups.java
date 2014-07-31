@@ -140,10 +140,14 @@ public class Cups
 		return PrinterInfo.STATUS_BUSY;
 	}
 
-	synchronized static Map<String, String[]> getPrintJobs(Context p, String printer)
+	synchronized static Map<String, String[]> getPrintJobs(Context p, String printer, boolean completedJobs)
 	{
 		HashMap<String, String[]> ret = new HashMap<String, String[]>();
-		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-l", printer}, chrootPath(p));
+		Proc pp;
+		if (completedJobs)
+			pp = new Proc(new String[] {PROOT, LPSTAT, "-W", "completed", "-l", printer}, chrootPath(p));
+		else
+			pp = new Proc(new String[] {PROOT, LPSTAT, "-l", printer}, chrootPath(p));
 		if (pp.out.length == 0 || pp.status != 0)
 			return ret;
 		String currentJob = null;

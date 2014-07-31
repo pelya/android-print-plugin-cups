@@ -24,7 +24,17 @@
 	<string name="yes">Yes</string>
 	<string name="no">No</string>
 
-	<string name="not_implemented_yet">This dialog is not implemented yet. But you can do it yourself - go to my site and grab the source code.</string>
+	<string name="not_implemented_yet">This dialog is not implemented yet. But you can do it yourself - click the button below and grab the source code.</string>
+	<string name="not_implemented_advanced_options">
+		In the future this dialog will have options for:
+		&#xA;Print preview
+		&#xA;Page margins
+		&#xA;Double-sided printing
+		&#xA;Collate copies
+		&#xA;Paper type
+		&#xA;Printer tray select
+		&#xA;Print resolution
+	</string>
 
 	<string name="sources_url">https://github.com/pelya/android-print-plugin-cups</string>
 
@@ -42,6 +52,8 @@
 	<string name="cancel_job">Cancel print job</string>
 	<string name="no_active_jobs">No active print jobs</string>
 	<string name="restart_printing">Resume all print jobs</string>
+	<string name="stop_print_service">Stop print service, this frees CPU and memory</string>
+	<string name="service_restarted_automatically">Service will be restarted automatically during printing</string>
 
 	<string name="name_desc">Printer description</string>
 	<string name="name_hint">Printer in kitchen</string>
@@ -57,7 +69,7 @@
 	<string name="model_button_clear">Select different model</string>
 	<string name="model_button_reading">Reading model database, please wait</string>
 	<string name="no_models_found">No such models found</string>
-	<string name="domain_desc">Workgroup or domain</string>
+	<string name="domain_desc">WORKGROUP or DOMAIN, usually upper-case</string>
 	<string name="domain_hint">workgroup</string>
 	<string name="user_desc">Username or login</string>
 	<string name="user_hint">john.smith</string>
@@ -65,5 +77,7 @@
 	<string name="password_hint">No space or @ allowed in password</string>
 
 	<string name="error_empty_fields">Please specify printer description, server, share, and model</string>
+
+	<string name="error_job_disappeared">Print job took too long and was deleted</string>
 
 </resources>
