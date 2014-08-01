@@ -46,7 +46,7 @@ import android.view.View.OnKeyListener;
 import android.view.MenuItem;
 import android.view.Menu;
 import android.view.Gravity;
-import android.text.method}.TextKeyListener;
+import android.text.method.TextKeyListener;
 import java.util.LinkedList;
 import java.io.SequenceInputStream;
 import java.io.BufferedInputStream;
