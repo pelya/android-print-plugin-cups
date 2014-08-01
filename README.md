@@ -36,10 +36,11 @@ TODO:
 -     Collate copies
 -     Prints multiple document pages on each output page (-o number-up=16)
 -     Fit to page
--    All options configurable by lpoptions:
--     Paper type
--     Printer tray select
--     Print resolution
+-     Resize print content to fit into less amount of pages, by reporting bigger paper size and rescaling it back when printing
+-     All options configurable by lpoptions:
+-      Paper type
+-      Printer tray select
+-      Print resolution
 -   Print preview:
 -    Show or hide print preview in advanced options
 -    Change page margins inside print preview
