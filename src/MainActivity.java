@@ -417,7 +417,7 @@ public class MainActivity extends Activity
 						{
 						}
 						String busybox = new File(getFilesDir(), "busybox").getAbsolutePath();
-						new Proc(new String[] {busybox, "setsid", "sh", "-c", "cd /proc/ ; for f in * ; do [ $f = $$ ] || kill -9 $f ; done"}, getFilesDir());
+						new Proc(new String[] {busybox, "nohup", "setsid", "sh", "-c", "cd /proc/ ; for f in * ; do [ $f = $$ ] || kill -9 $f ; done"}, getFilesDir());
 						Cups.stopCupsDaemon(MainActivity.this);
 						System.exit(0);
 					}

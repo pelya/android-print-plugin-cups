@@ -188,7 +188,7 @@ public class Installer
 			stream = p.getAssets().open("cupsd.conf");
 			out = new FileOutputStream(new File(Cups.chrootPath(p), "etc/cups/cupsd.conf"));
 			Cups.copyStream(stream, out);
-			new Proc(new String[] {busybox, "chmod", "-R", "go+rX", "usr/share/cups/doc-root"}, Cups.chrootPath(p));
+			new Proc(new String[] {busybox, "chmod", "-R", "go+rX", "usr/share/cups"}, Cups.chrootPath(p));
 
 			Log.i(TAG, "Extracting data finished");
 		}
