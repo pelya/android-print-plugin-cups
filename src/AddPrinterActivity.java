@@ -369,6 +369,7 @@ public class AddPrinterActivity extends Activity
 						Cups.addPrinter(AddPrinterActivity.this, name.getText().toString(), server.getText().toString(),
 										printer.getText().toString(), modelList.get(model.getText().toString()),
 										domain.getText().toString().toUpperCase(), user.getText().toString(), password.getText().toString());
+						Cups.updatePrintersInfo(AddPrinterActivity.this);
 						progressCircle.dismiss();
 						finish();
 					}
@@ -378,6 +379,7 @@ public class AddPrinterActivity extends Activity
 		layout.addView(addPrinter);
 
 		progressCircle = new ProgressDialog(this);
+		progressCircle.setMessage(getResources().getString(R.string.please_wait));
 
 		updateNetworkTree();
 

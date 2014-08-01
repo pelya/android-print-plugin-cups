@@ -171,7 +171,7 @@ public class Installer
 				}
 				catch (Exception ee)
 				{
-					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/dist-cups-jessie.tar.xz/download";
+					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/CUPS/dist-cups-jessie.tar.xz/download";
 					Log.i(TAG, "Error unpacking data from OBB: " + e.toString());
 					Log.i(TAG, "No data archive in OBB, downloading from web: " + ARCHIVE_URL);
 					setText(p, text, p.getResources().getString(R.string.downloading_web));

@@ -83,6 +83,7 @@ import android.provider.Settings;
 import android.app.AlertDialog;
 import android.widget.ScrollView;
 import android.content.DialogInterface;
+import android.app.ProgressDialog;
 import android.widget.Toast;
 import android.net.Uri;
 import java.util.*;
@@ -107,6 +108,7 @@ public class MainActivity extends Activity
 	private boolean jobsThreadPaused = false;
 	private String[] printJobs = new String[0];
 	private Semaphore printJobsUpdate = new Semaphore(0);
+	private ProgressDialog progressCircle = null;
 
 	@Override protected void onCreate(Bundle savedInstanceState)
 	{
@@ -155,6 +157,9 @@ public class MainActivity extends Activity
 
 		scroll = new ScrollView(this);
 		scroll.addView(layout);
+
+		progressCircle = new ProgressDialog(this);
+		progressCircle.setMessage(getResources().getString(R.string.please_wait));
 
 		setContentView(scroll);
 	}
@@ -287,7 +292,10 @@ public class MainActivity extends Activity
 						{
 							public void onClick(DialogInterface d, int s)
 							{
+								progressCircle.show();
 								Cups.deletePrinter(MainActivity.this, printers[which]);
+								Cups.updatePrintersInfo(MainActivity.this);
+								progressCircle.dismiss();
 								d.dismiss();
 							}
 						});

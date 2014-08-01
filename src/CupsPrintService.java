@@ -95,6 +95,8 @@ public class CupsPrintService extends PrintService
 		super.onCreate();
 		pluginEnabled = true;
 		PrintJobs.init(this);
+		// Initialize cached paper sizes
+		Cups.getMediaSize(this, "A4");
 	}
 
 	@Override public void onDestroy()
@@ -118,6 +120,8 @@ public class CupsPrintService extends PrintService
 		else
 		{
 			Cups.startCupsDaemon(this);
+			// Initialize cached printer list
+			Cups.updatePrintersInfo(this);
 		}
 	}
 
@@ -155,7 +159,7 @@ public class CupsPrintService extends PrintService
 			for (String pr: Cups.getPrinters(CupsPrintService.this))
 			{
 				PrinterId id = generatePrinterId(pr);
-				ret.add(getPrinterInfoBasic(id));
+				ret.add(getPrinterInfoFull(id));
 			}
 			addPrinters(ret);
 		}
@@ -167,6 +171,9 @@ public class CupsPrintService extends PrintService
 		{
 			Log.d(TAG, "onStartPrinterTracking(): " + id.getLocalId());
 			trackedPrinters.add(id);
+			ArrayList<PrinterInfo> ret = new ArrayList<PrinterInfo>();
+			ret.add(getPrinterInfoFull(id));
+			addPrinters(ret);
 			sem.release();
 		}
 		public synchronized void onStopPrinterStateTracking(PrinterId id)
@@ -181,7 +188,7 @@ public class CupsPrintService extends PrintService
 			for (PrinterId id: printerIds)
 			{
 				Log.d(TAG, "onValidatePrinters(): " + id.getLocalId());
-				ret.add(getPrinterInfoBasic(id));
+				ret.add(getPrinterInfoFull(id));
 			}
 			addPrinters(ret);
 			Log.d(TAG, "onValidatePrinters(): exit");
@@ -189,8 +196,21 @@ public class CupsPrintService extends PrintService
 
 		public void run()
 		{
-			while (true)
+			while (!shouldExit)
 			{
+				try
+				{
+					sem.tryAcquire(8, TimeUnit.SECONDS);
+				}
+				catch(Exception e)
+				{
+				}
+				synchronized(this)
+				{
+					if (shouldExit)
+						return;
+				}
+				Cups.updatePrintersInfo(CupsPrintService.this);
 				synchronized(this)
 				{
 					if (shouldExit)
@@ -211,13 +231,6 @@ public class CupsPrintService extends PrintService
 							}
 						});
 					}
-				}
-				try
-				{
-					sem.tryAcquire(4, TimeUnit.SECONDS);
-				}
-				catch(Exception e)
-				{
 				}
 			}
 		}

@@ -106,41 +106,104 @@ public class Cups
 	public static final double MillimetersToPoints = 1.0 / PointsToMillimeters;
 	public static final double MillimetersToInches = 0.03937007874;
 
-	static File chrootPath(Context p)
+	public static File chrootPath(Context p)
 	{
 		return new File(p.getFilesDir().getAbsolutePath() + IMG);
 	}
 
-	synchronized static boolean isRunning(Context p)
+	synchronized public static boolean isRunning(Context p)
 	{
 		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-r"}, chrootPath(p));
 		return pp.out.length > 0 && pp.out[0].equals("scheduler is running");
 	}
 
-	synchronized static String[] getPrinters(Context p)
+	private static String[] printers = null;
+	private static HashSet<String> printerIsBusy = new HashSet<String>();
+	private static HashMap<String, HashMap<String, String[]> > printerOptions = new HashMap<String, HashMap<String, String[]> >();
+	
+	synchronized private static void setPrinterList(String [] _printers, HashSet<String> _printerIsBusy, HashMap<String, HashMap<String, String[]> > _printerOptions)
 	{
-		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-v"}, chrootPath(p));
-		String[] ret = new String[pp.out.length];
-		for (int i = 0; i < pp.out.length; i++)
-		{
-			if (!pp.out[i].startsWith("device for ") || pp.out[i].indexOf(":") == -1)
-				return new String[0];
-			ret[i] = pp.out[i].substring(("device for ").length(), pp.out[i].indexOf(":"));
-		}
-		return ret;
+		printers = _printers;
+		printerIsBusy = _printerIsBusy;
+		printerOptions = _printerOptions;
 	}
 
-	synchronized static int getPrinterStatus(Context p, String printer)
+	public static void updatePrintersInfo(Context p)
 	{
-		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-p", printer}, chrootPath(p));
-		if (pp.out.length == 0 || pp.status != 0)
+		ArrayList<String> printerList = new ArrayList<String>();
+		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-v"}, chrootPath(p));
+		for (String s: pp.out)
+		{
+			if (!s.startsWith("device for ") || s.indexOf(":") == -1)
+				continue;
+			printerList.add(s.substring(("device for ").length(), s.indexOf(":")));
+		}
+
+		HashSet<String> busy = new HashSet<String>();
+		for(String printer: printerList)
+		{
+			pp = new Proc(new String[] {PROOT, LPSTAT, "-p", printer}, chrootPath(p));
+			if (pp.out[0].indexOf("is idle") == -1)
+				busy.add(printer);
+		}
+
+		HashMap<String, HashMap<String, String[]> > allOptions = new HashMap<String, HashMap<String, String[]> >();
+		for(String printer: printerList)
+		{
+			pp = new Proc(new String[] {PROOT, LPOPTIONS, "-p", printer, "-l"}, chrootPath(p));
+			if (pp.out.length == 0 || pp.status != 0)
+				continue;
+			HashMap<String, String[]> options = new HashMap<String, String[]>();
+			for(String s: pp.out)
+			{
+				if (s.indexOf("/") == -1 || s.indexOf(": ") == -1)
+					continue;
+				String k = s.substring(0, s.indexOf("/"));
+				String vv[] = s.substring(s.indexOf(": ") + 2).split("\\s+");
+				for (int i = 0; i < vv.length; i++)
+				{
+					if (vv[i].startsWith("*"))
+					{
+						String dd = vv[i].substring(1);
+						vv[i] = vv[0];
+						vv[0] = dd;
+						break;
+					}
+				}
+				options.put(k, vv);
+			}
+			allOptions.put(printer, options);
+		}
+
+		setPrinterList(printerList.toArray(new String[0]), busy, allOptions);
+	}
+
+	synchronized public static String[] getPrinters(Context p)
+	{
+		if (printers == null)
+			updatePrintersInfo(p);
+		return printers;
+	}
+
+	synchronized public static int getPrinterStatus(Context p, String printer)
+	{
+		if (printers == null)
+			updatePrintersInfo(p);
+		if (!Arrays.asList(printers).contains(printer))
 			return PrinterInfo.STATUS_UNAVAILABLE;
-		if (pp.out[0].indexOf("is idle") != -1)
+		if (!printerIsBusy.contains(printer))
 			return PrinterInfo.STATUS_IDLE;
 		return PrinterInfo.STATUS_BUSY;
 	}
 
-	synchronized static Map<String, String[]> getPrintJobs(Context p, String printer, boolean completedJobs)
+	synchronized public static Map<String, String[]> getPrinterOptions(Context p, String printer)
+	{
+		if (printers == null)
+			updatePrintersInfo(p);
+		return printerOptions.get(printer);
+	}
+
+	synchronized public static Map<String, String[]> getPrintJobs(Context p, String printer, boolean completedJobs)
 	{
 		HashMap<String, String[]> ret = new HashMap<String, String[]>();
 		Proc pp;
@@ -173,13 +236,13 @@ public class Cups
 		return ret;
 	}
 
-	synchronized static void cancelPrintJob(Context p, String job)
+	synchronized public static void cancelPrintJob(Context p, String job)
 	{
 		Proc pp = new Proc(new String[] {PROOT, CANCEL, job}, chrootPath(p));
 		Log.d(TAG, "Cancel job status: " + pp.status + " output: " + Arrays.toString(pp.out));
 	}
 
-	synchronized static void enablePrinter(Context p, String printer)
+	synchronized public static void enablePrinter(Context p, String printer)
 	{
 		Proc pp = new Proc(new String[] {PROOT, CUPSACCEPT, printer}, chrootPath(p));
 		Log.d(TAG, "cupsaccept printer status: " + pp.status + " output: " + Arrays.toString(pp.out));
@@ -187,37 +250,9 @@ public class Cups
 		Log.d(TAG, "cupsenable printer status: " + pp.status + " output: " + Arrays.toString(pp.out));
 	}
 
-	synchronized static Map<String, String[]> getPrinterOptions(Context p, String printer)
-	{
-		HashMap<String, String[]> ret = new HashMap<String, String[]>();
-		Proc pp = new Proc(new String[] {PROOT, LPOPTIONS, "-p", printer, "-l"}, chrootPath(p));
-		if (pp.out.length == 0 || pp.status != 0)
-			return ret;
-		for(String s: pp.out)
-		{
-			if (s.indexOf("/") == -1 || s.indexOf(": ") == -1)
-				continue;
-			String k = s.substring(0, s.indexOf("/"));
-			String vv[] = s.substring(s.indexOf(": ") + 2).split("\\s+");
-			for (int i = 0; i < vv.length; i++)
-			{
-				if (vv[i].startsWith("*"))
-				{
-					String dd = vv[i].substring(1);
-					vv[i] = vv[0];
-					vv[0] = dd;
-					//Log.d(TAG, "Printer " + printer + " option " + k + " default value " + dd);
-					break;
-				}
-			}
-			ret.put(k, vv);
-		}
-		return ret;
-	}
-
 	private static Map<String, PrintAttributes.MediaSize> mediaSizes = null;
 
-	synchronized static PrintAttributes.MediaSize getMediaSize(Context p, String name)
+	synchronized public static PrintAttributes.MediaSize getMediaSize(Context p, String name)
 	{
 		if (mediaSizes == null)
 			fillMediaSizes(p);
@@ -257,7 +292,7 @@ public class Cups
 		}
 	}
 
-	static PrintAttributes.Resolution getResolution(String s)
+	public static PrintAttributes.Resolution getResolution(String s)
 	{
 		String rr[] = s.split("[^0-9]+");
 		if (rr.length == 0)
@@ -267,7 +302,7 @@ public class Cups
 		return new PrintAttributes.Resolution(s, s, Integer.parseInt(rr[0]), Integer.parseInt(rr[1]));
 	}
 
-	synchronized static void addPrinter(Context p, String name, String host, String printer, String model, String workgroup, String username, String password)
+	synchronized public static void addPrinter(Context p, String name, String host, String printer, String model, String workgroup, String username, String password)
 	{
 		// TODO: user password will be accessbile through /proc filesystem to all processes, for several seconds while the command is executing
 		// lpadmin does not provide any other convenient way of passing passwords though, and I don't want to mess up with lpoptions
@@ -289,21 +324,20 @@ public class Cups
 		Log.d(TAG, "Add printer status: " + pp.status + " output: " + Arrays.toString(pp.out));
 	}
 
-	synchronized static void deletePrinter(Context p, String name)
+	synchronized public static void deletePrinter(Context p, String name)
 	{
 		new Proc(new String[] {PROOT, LPADMIN, "-x", name}, chrootPath(p));
 	}
 
-	synchronized static String[] printDocument(	final Context p,
-												final android.printservice.PrintJob job,
-												final String printer,
-												//final FileDescriptor documentData,
-												final String jobLabel,
-												int copies,
-												final String mediaSize,
-												boolean landscape,
-												final String resolution,
-												final PageRange[] pages )
+	synchronized public static String[] printDocument(	final Context p,
+														final android.printservice.PrintJob job,
+														final String printer,
+														final String jobLabel,
+														int copies,
+														final String mediaSize,
+														boolean landscape,
+														final String resolution,
+														final PageRange[] pages )
 	{
 		updateDns(p);
 		final String[] ret = new String[] { "", "" };
@@ -392,7 +426,7 @@ public class Cups
 		return ret;
 	}
 
-	synchronized static Map<String, String> getPrinterModels(Context p)
+	synchronized public static Map<String, String> getPrinterModels(Context p)
 	{
 		final String modelsFileName = "printer-models.txt";
 		File modelsFile = new File(chrootPath(p), modelsFileName);
@@ -419,14 +453,14 @@ public class Cups
 		return models;
 	}
 
-	synchronized static void startCupsDaemon(Context p)
+	synchronized public static void startCupsDaemon(Context p)
 	{
 		if (cupsd != null && isDaemonRunning(p))
 			return;
 		restartCupsDaemon(p);
 	}
 
-	synchronized static void stopCupsDaemon(Context p)
+	synchronized public static void stopCupsDaemon(Context p)
 	{
 		if (cupsd == null)
 			return;
@@ -435,7 +469,7 @@ public class Cups
 		cupsd = null;
 	}
 
-	synchronized static void restartCupsDaemon(Context p)
+	synchronized public static void restartCupsDaemon(Context p)
 	{
 		if (cupsd != null)
 		{
@@ -465,7 +499,7 @@ public class Cups
 		}
 	}
 
-	static boolean isDaemonRunning(Context p)
+	public static boolean isDaemonRunning(Context p)
 	{
 		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-r"}, chrootPath(p));
 		if (pp.status != 0 || pp.out.length < 1 || pp.out[0].indexOf("scheduler is running") != 0)
@@ -473,12 +507,12 @@ public class Cups
 		return true;
 	}
 
-	synchronized static void updateDns(Context p)
+	synchronized public static void updateDns(Context p)
 	{
 		Proc pp = new Proc(new String[] {"./update-dns.sh"}, chrootPath(p));
 	}
 
-	static String[] getNetworkTree(Context p, String login, String password, String domain)
+	public static String[] getNetworkTree(Context p, String login, String password, String domain)
 	{
 		if (login.length() > 0 && password.length() > 0)
 		{
@@ -526,5 +560,5 @@ public class Cups
 		return totalLen;
 	}
 
-	static final String TAG = "Cups";
+	private static final String TAG = "Cups";
 }
