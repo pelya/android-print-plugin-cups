@@ -10,5 +10,5 @@ stty -echo
 jarsigner -verbose -keystore $ANDROID_KEYSTORE_FILE -sigalg MD5withRSA -digestalg SHA1 bin/MainActivity-release-unsigned.apk $ANDROID_KEYSTORE_ALIAS || exit 1
 stty echo
 echo
-rm -f $APPNAME-$APPVER.apk
-zipalign 4 bin/MainActivity-release-unsigned.apk $APPNAME-$APPVER.apk
+rm -f $APPNAME.apk
+zipalign 4 bin/MainActivity-release-unsigned.apk $APPNAME.apk

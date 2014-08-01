@@ -163,16 +163,15 @@ public class Installer
 					Proc pp = new Proc(new String[] {busybox, "tar", "xJf",
 								obbFile.getAbsolutePath()},
 								p.getFilesDir());
-					BufferedWriter clearObb = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(obbFile), "utf-8"));
-					clearObb.write("Unpacked and cleared\n");
-					clearObb.close();
-					if (pp.status != 0)
-						throw new IOException("Cannot extract data file: " + obbFile.getAbsolutePath());
+					Log.i(TAG, "Extract data file: " + obbFile.getAbsolutePath() + " extract command status " + pp.status + " " +  Arrays.toString(pp.out));
+					// Clear the file
+					pp = new Proc(new String[] {busybox, "sh", "-c", "echo Unpacked_and_truncated > " + obbFile.getAbsolutePath()}, p.getFilesDir());
+					Log.i(TAG, "Truncate data file: " + obbFile.getAbsolutePath() + " status " + pp.status + " " +  Arrays.toString(pp.out));
 				}
 				catch (Exception ee)
 				{
 					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/CUPS/dist-cups-jessie.tar.xz/download";
-					Log.i(TAG, "Error unpacking data from OBB: " + e.toString());
+					Log.i(TAG, "Error unpacking data from OBB: " + ee.toString());
 					Log.i(TAG, "No data archive in OBB, downloading from web: " + ARCHIVE_URL);
 					setText(p, text, p.getResources().getString(R.string.downloading_web));
 					URL link = new URL(ARCHIVE_URL);
@@ -216,5 +215,5 @@ public class Installer
 		});
 	}
 
-	static final String TAG = "Installer";
+	static final String TAG = "CupsInstaller";
 }
