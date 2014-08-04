@@ -202,7 +202,7 @@ public class Cups
 			updatePrintersInfo(p);
 		if (printerOptions.containsKey(printer))
 			return printerOptions.get(printer);
-		return new Map<String, String[]>();
+		return new HashMap<String, String[]>();
 	}
 
 	synchronized public static Map<String, String[]> getPrintJobs(Context p, String printer, boolean completedJobs)
