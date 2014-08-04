@@ -200,7 +200,9 @@ public class Cups
 	{
 		if (printers == null)
 			updatePrintersInfo(p);
-		return printerOptions.get(printer);
+		if (printerOptions.containsKey(printer))
+			return printerOptions.get(printer);
+		return new Map<String, String[]>();
 	}
 
 	synchronized public static Map<String, String[]> getPrintJobs(Context p, String printer, boolean completedJobs)
