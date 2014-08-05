@@ -45,3 +45,4 @@ TODO:
 -    Show or hide print preview in advanced options
 -    Change page margins inside print preview
 -    Select and de-select pages for print preview
+-   USB printers support, by forwaring calls from libusb to Java
