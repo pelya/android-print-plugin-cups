@@ -46,3 +46,4 @@ TODO:
 -    Change page margins inside print preview
 -    Select and de-select pages for print preview
 -   USB printers support, by forwaring calls from libusb to Java
+-   Print on older devices and from older apps, using 'Share' button.
