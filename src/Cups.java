@@ -143,6 +143,8 @@ public class Cups
 		for(String printer: printerList)
 		{
 			pp = new Proc(new String[] {PROOT, LPSTAT, "-p", printer}, chrootPath(p));
+			if (pp.out.length == 0 || pp.status != 0)
+				continue;
 			if (pp.out[0].indexOf("is idle") == -1)
 				busy.add(printer);
 		}
