@@ -4,6 +4,7 @@
 
 	<string name="init">Initializing</string>
 	<string name="please_wait_unpack">Please wait while data is being unpacked</string>
+	<string name="please_wait_unpack_progress">Please wait while data is being unpacked: %1$d%% done</string>
 	<string name="downloading_web">Downloading 100 Mb data from server, this may take several minutes</string>
 	<string name="not_enough_space">Not enough free space on storage: %1$d Mb required, %2$d Mb available</string>
 	<string name="error_extracting">Error extracting data: </string>

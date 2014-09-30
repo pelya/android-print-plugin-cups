@@ -84,6 +84,7 @@ import java.io.*;
 import android.os.Environment;
 import android.os.StatFs;
 import java.net.URL;
+import java.net.URLConnection;
 
 public class Installer
 {
@@ -160,12 +161,12 @@ public class Installer
 					Log.i(TAG, "OBB file path: " + obbFile.getAbsolutePath() + " exists " + obbFile.exists() + " length " + obbFile.length());
 					if (!obbFile.exists() || obbFile.length() < 256)
 						throw new IOException("Cannot find data file: " + obbFile.getAbsolutePath());
-					Proc pp = new Proc(new String[] {busybox, "tar", "xJf",
-								obbFile.getAbsolutePath()},
-								p.getFilesDir());
-					Log.i(TAG, "Extract data file: " + obbFile.getAbsolutePath() + " extract command status " + pp.status + " " +  Arrays.toString(pp.out));
-					// Clear the file
-					pp = new Proc(new String[] {busybox, "sh", "-c", "echo Unpacked_and_truncated > " + obbFile.getAbsolutePath()}, p.getFilesDir());
+					Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
+					copyStreamWithProgress(p, text, obbFile.length(), new FileInputStream(obbFile), proc.getOutputStream());
+					int status = proc.waitFor();
+					Log.i(TAG, "Extract data file: " + obbFile.getAbsolutePath() + " extract command status " + status);
+					// Clear the .obb file, we do not need it anymore
+					Proc pp = new Proc(new String[] {busybox, "sh", "-c", "echo Unpacked_and_truncated > " + obbFile.getAbsolutePath()}, p.getFilesDir());
 					Log.i(TAG, "Truncate data file: " + obbFile.getAbsolutePath() + " status " + pp.status + " " +  Arrays.toString(pp.out));
 				}
 				catch (Exception ee)
@@ -175,15 +176,19 @@ public class Installer
 					Log.i(TAG, "No data archive in OBB, downloading from web: " + ARCHIVE_URL);
 					setText(p, text, p.getResources().getString(R.string.downloading_web));
 					URL link = new URL(ARCHIVE_URL);
-					InputStream download = new BufferedInputStream(link.openStream());
+					URLConnection connection = link.openConnection();
+
+					InputStream download = new BufferedInputStream(connection.getInputStream());
 					Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
-					Cups.copyStream(download, proc.getOutputStream());
+					copyStreamWithProgress(p, text, connection.getContentLength(), download, proc.getOutputStream());
 					int status = proc.waitFor();
 					Log.i(TAG, "Downloading from web: status: " + status);
 				}
 			}
 
+			setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
 			new Proc(new String[] {busybox, "cp", "-af", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
+			setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
 			new Proc(new String[] {busybox, "rm", "-rf", "img-armeabi-v7a", "img-x86"}, p.getFilesDir());
 			stream = p.getAssets().open("cupsd.conf");
 			out = new FileOutputStream(new File(Cups.chrootPath(p), "etc/cups/cupsd.conf"));
@@ -213,6 +218,27 @@ public class Installer
 				text.setText(str);
 			}
 		});
+	}
+
+	static void copyStreamWithProgress(final Activity p, final TextView text, long size, InputStream stream, OutputStream out) throws java.io.IOException
+	{
+		byte[] buf = new byte[131072];
+		if (size <= 0)
+			size = 129332656;
+		setText(p, text, p.getResources().getString(R.string.please_wait_unpack_progress, 0));
+		int len = stream.read(buf);
+		long totalLen = 0;
+		while (len >= 0)
+		{
+			if(len > 0)
+				out.write(buf, 0, len);
+			totalLen += len;
+			setText(p, text, p.getResources().getString(R.string.please_wait_unpack_progress, totalLen * 100 / size));
+			len = stream.read(buf);
+		}
+		stream.close();
+		out.close();
+		setText(p, text, p.getResources().getString(R.string.please_wait_unpack_progress, 100));
 	}
 
 	static final String TAG = "CupsInstaller";
