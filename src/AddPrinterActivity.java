@@ -373,6 +373,7 @@ public class AddPrinterActivity extends Activity
 										domain.getText().toString().toUpperCase(), user.getText().toString(), password.getText().toString());
 						Cups.updatePrintersInfo(AddPrinterActivity.this);
 						progressCircle.dismiss();
+						Toast.makeText(AddPrinterActivity.this, R.string.printer_added_successfully, Toast.LENGTH_LONG).show();
 						finish();
 					}
 				}).start();
@@ -421,6 +422,8 @@ public class AddPrinterActivity extends Activity
 							model.setText("");
 						if (model.getText().toString().length() == 0)
 							model.setEnabled(true);
+						else
+							selectModel.setText(getResources().getString(R.string.model_button_clear));
 						selectModel.setEnabled(true);
 						addPrinter.setEnabled(true);
 						addPrinter.setText(getResources().getString(R.string.add_printer_button));

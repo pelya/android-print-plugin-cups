@@ -204,6 +204,10 @@ public class Installer
 			return;
 		}
 
+		setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
+		Cups.getPrinterModels(p);
+		setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
+
 		unpacking = false;
 		p.enableSettingsButton();
 		Cups.startCupsDaemon(p);

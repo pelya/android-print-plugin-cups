@@ -344,6 +344,9 @@ public class MainActivity extends Activity
 					{
 						dialog.dismiss();
 						Uri uri = Cups.getPrinterAddress(MainActivity.this, printers[which]);
+						if (uri == null)
+							return;
+						Log.d(TAG, "Printer URI: " + uri.toString());
 						ClipData clip = ClipData.newUri(getContentResolver(), printers[which], uri);
 						ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
 						clipboard.setPrimaryClip(clip);

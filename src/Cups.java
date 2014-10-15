@@ -255,9 +255,17 @@ public class Cups
 			break;
 		}
 		if (addr == null)
+		{
+			Log.d(TAG, "getPrinterAddress: addr == null");
 			return null;
+		}
+		addr = addr.trim();
+		Log.d(TAG, "getPrinterAddress: addr = " + addr);
 		if (!addr.startsWith("smb://"))
+		{
+			Log.d(TAG, "getPrinterAddress: addr.startsWith(smb://)");
 			return null;
+		}
 		addr = addr.substring("smb://".length());
 		String[] parts = addr.split("/");
 		Uri.Builder uri = new Uri.Builder();
@@ -276,7 +284,10 @@ public class Cups
 			uri.appendQueryParameter("p", parts[1]);
 		}
 		else
+		{
+			Log.d(TAG, "getPrinterAddress: parts.length < 2");
 			return null;
+		}
 
 		pp = new Proc(new String[] {PROOT, LPOPTIONS, "-p", printer}, chrootPath(p));
 		String model = null;
@@ -285,13 +296,17 @@ public class Cups
 		{
 			if (s.indexOf(MODEL_STR) == -1)
 				continue;
-			String model1 = s.substring(MODEL_STR.length());
-			if (model.indexOf("'") == -1)
+			String model1 = s.substring(s.indexOf(MODEL_STR) + MODEL_STR.length());
+			if (model1.indexOf("'") == -1)
 				continue;
 			model = model1.substring(0, model1.indexOf("'"));
+			break;
 		}
 		if (model == null)
+		{
+			Log.d(TAG, "getPrinterAddress: model == null");
 			return null;
+		}
 		uri.appendQueryParameter("m", model);
 
 		return uri.build();
