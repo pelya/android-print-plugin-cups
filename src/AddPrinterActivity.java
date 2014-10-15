@@ -86,6 +86,7 @@ import android.content.DialogInterface;
 import android.app.ProgressDialog;
 import android.text.method.PasswordTransformationMethod;
 import android.widget.Toast;
+import android.net.Uri;
 
 
 public class AddPrinterActivity extends Activity
@@ -338,7 +339,8 @@ public class AddPrinterActivity extends Activity
 		layout.addView(password);
 
 		addPrinter = new Button(this);
-		addPrinter.setText(getResources().getString(R.string.add_printer_button));
+		addPrinter.setEnabled(false);
+		addPrinter.setText(getResources().getString(R.string.add_printer_button) + " - " + getResources().getString(R.string.model_button_reading));
 		addPrinter.setOnClickListener(new View.OnClickListener()
 		{
 			public void onClick(View v)
@@ -385,6 +387,20 @@ public class AddPrinterActivity extends Activity
 
 		setContentView(scroll);
 
+		Uri uri = getIntent() != null ? getIntent().getData() : null;
+		if (uri != null && uri.getScheme() != null && uri.getHost() != null &&
+			getResources().getString(R.string.add_printer_scheme).equals(uri.getScheme()) &&
+			getResources().getString(R.string.add_printer_host).equals(uri.getHost()))
+		{
+			name.setText(uri.getQueryParameter("n"));
+			server.setText(uri.getQueryParameter("s"));
+			printer.setText(uri.getQueryParameter("p"));
+			model.setText(uri.getQueryParameter("m"));
+			domain.setText(uri.getQueryParameter("d"));
+			user.setText(uri.getQueryParameter("u"));
+			password.setText(uri.getQueryParameter("pw"));
+		}
+
 		updateModelList();
 	}
 
@@ -401,8 +417,13 @@ public class AddPrinterActivity extends Activity
 					{
 						selectModel.setText(getResources().getString(R.string.model_button_type));
 						model.setHint(R.string.model_hint);
-						model.setEnabled(true);
+						if (model.getText().toString().length() > 0 && modelList.get(model.getText().toString()) == null)
+							model.setText("");
+						if (model.getText().toString().length() == 0)
+							model.setEnabled(true);
 						selectModel.setEnabled(true);
+						addPrinter.setEnabled(true);
+						addPrinter.setText(getResources().getString(R.string.add_printer_button));
 					}
 				});
 			}

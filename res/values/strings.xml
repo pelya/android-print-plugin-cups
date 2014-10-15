@@ -55,10 +55,11 @@
 	<string name="restart_printing">Resume all print jobs</string>
 	<string name="stop_print_service">Stop print service, this frees CPU and memory</string>
 	<string name="service_restarted_automatically">Service will be restarted automatically during printing</string>
+	<string name="share_printer_address">Share/print a printer address</string>
 
 	<string name="name_desc">Printer description</string>
 	<string name="name_hint">Printer in kitchen</string>
-	<string name="server_desc">Server name or IP address</string>
+	<string name="server_desc">Server name or IP address, with optional port</string>
 	<string name="server_hint">192.168.0.100</string>
 	<string name="printer_desc">Printer share on server</string>
 	<string name="printer_hint">printer1</string>
@@ -79,5 +80,9 @@
 	<string name="please_wait">Please wait</string>
 	<string name="error_empty_fields">Please specify printer description, server, share, and model</string>
 	<string name="error_job_disappeared">Print job took too long or printer was deleted</string>
+	<string name="copied_to_clipboard">Printer address copied to clipboard</string>
+
+	<string name="add_printer_scheme" translatable="false">printer</string>
+	<string name="add_printer_host" translatable="false">printer.add</string>
 
 </resources>

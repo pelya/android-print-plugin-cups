@@ -87,6 +87,8 @@ import android.app.ProgressDialog;
 import android.widget.Toast;
 import android.net.Uri;
 import java.util.*;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 
 
 public class MainActivity extends Activity
@@ -99,6 +101,7 @@ public class MainActivity extends Activity
 	private Button openSettings = null;
 	private Button addPrinter = null;
 	private Button deletePrinter = null;
+	private Button sharePrinter = null;
 	private Button viewNetwork = null;
 	private String[] networkTree = null;
 	private Button advancedInterface = null;
@@ -324,6 +327,42 @@ public class MainActivity extends Activity
 			}
 		});
 		layout.addView(deletePrinter);
+
+		sharePrinter = new Button(this);
+		sharePrinter.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		sharePrinter.setText(getResources().getString(R.string.share_printer_address));
+		sharePrinter.setOnClickListener(new View.OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				final String[] printers = Cups.getPrinters(MainActivity.this);
+				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				builder.setTitle(R.string.share_printer_address);
+				builder.setItems(printers, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface dialog, final int which)
+					{
+						dialog.dismiss();
+						Uri uri = Cups.getPrinterAddress(MainActivity.this, printers[which]);
+						ClipData clip = ClipData.newUri(getContentResolver(), printers[which], uri);
+						ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+						clipboard.setPrimaryClip(clip);
+						Toast.makeText(MainActivity.this, R.string.copied_to_clipboard, Toast.LENGTH_LONG).show();
+					}
+				});
+				builder.setPositiveButton(R.string.cancel, new DialogInterface.OnClickListener()
+				{
+					public void onClick(DialogInterface d, int s)
+					{
+						d.dismiss();
+					}
+				});
+				AlertDialog alert = builder.create();
+				alert.setOwnerActivity(MainActivity.this);
+				alert.show();
+			}
+		});
+		layout.addView(sharePrinter);
 
 		viewNetwork = new Button(this);
 		viewNetwork.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

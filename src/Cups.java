@@ -84,6 +84,8 @@ import java.io.*;
 import android.os.Environment;
 import android.os.StatFs;
 import java.net.URL;
+import android.net.Uri;
+
 
 public class Cups
 {
@@ -238,6 +240,61 @@ public class Cups
 		if (currentJob != null)
 			ret.put(currentJob, jobAttrs.toArray(new String[0]));
 		return ret;
+	}
+
+	synchronized public static Uri getPrinterAddress(Context p, String printer)
+	{
+		ArrayList<String> printerList = new ArrayList<String>();
+		Proc pp = new Proc(new String[] {PROOT, LPSTAT, "-v", printer}, chrootPath(p));
+		String addr = null;
+		for (String s: pp.out)
+		{
+			if (!s.startsWith("device for ") || s.indexOf(":") == -1)
+				continue;
+			addr = s.substring(s.indexOf(":") + 1);
+			break;
+		}
+		if (addr == null)
+			return null;
+		if (!addr.startsWith("smb://"))
+			return null;
+		addr = addr.substring("smb://".length());
+		String[] parts = addr.split("/");
+		Uri.Builder uri = new Uri.Builder();
+		uri.scheme(p.getResources().getString(R.string.add_printer_scheme));
+		uri.authority(p.getResources().getString(R.string.add_printer_host));
+		uri.appendQueryParameter("n", printer);
+		if (parts.length >= 3)
+		{
+			uri.appendQueryParameter("d", parts[0]);
+			uri.appendQueryParameter("s", parts[1]);
+			uri.appendQueryParameter("p", parts[2]);
+		}
+		else if (parts.length == 2)
+		{
+			uri.appendQueryParameter("s", parts[0]);
+			uri.appendQueryParameter("p", parts[1]);
+		}
+		else
+			return null;
+
+		pp = new Proc(new String[] {PROOT, LPOPTIONS, "-p", printer}, chrootPath(p));
+		String model = null;
+		String MODEL_STR = "printer-make-and-model='";
+		for (String s: pp.out)
+		{
+			if (s.indexOf(MODEL_STR) == -1)
+				continue;
+			String model1 = s.substring(MODEL_STR.length());
+			if (model.indexOf("'") == -1)
+				continue;
+			model = model1.substring(0, model1.indexOf("'"));
+		}
+		if (model == null)
+			return null;
+		uri.appendQueryParameter("m", model);
+
+		return uri.build();
 	}
 
 	synchronized public static void cancelPrintJob(Context p, String job)
