@@ -77,6 +77,7 @@
 	<string name="user_hint">john.smith</string>
 	<string name="password_desc">Password</string>
 	<string name="password_hint">No space or @ allowed in password</string>
+	<string name="show_password">Show password</string>
 	<string name="please_wait">Please wait</string>
 	<string name="error_empty_fields">Please specify printer description, server, share, and model</string>
 	<string name="error_job_disappeared">Print job took too long or printer was deleted</string>

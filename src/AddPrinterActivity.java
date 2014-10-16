@@ -86,6 +86,8 @@ import android.content.DialogInterface;
 import android.app.ProgressDialog;
 import android.text.method.PasswordTransformationMethod;
 import android.widget.Toast;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.net.Uri;
 
 
@@ -336,7 +338,37 @@ public class AddPrinterActivity extends Activity
 		password.setHint(R.string.password_hint);
 		password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
 		password.setTransformationMethod(PasswordTransformationMethod.getInstance());
-		layout.addView(password);
+		password.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
+
+		CheckBox showPassword = new CheckBox(this);
+		showPassword.setText(R.string.show_password);
+		password.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
+		showPassword.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener()
+		{
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+			{
+				int selection = password.getSelectionStart();
+				if (isChecked)
+				{
+					password.setInputType(InputType.TYPE_CLASS_TEXT);
+					password.setTransformationMethod(null);
+				}
+				else
+				{
+					password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+					password.setTransformationMethod(PasswordTransformationMethod.getInstance());
+				}
+				password.setSelection(selection);
+			}
+		});
+
+		LinearLayout layout2 = new LinearLayout(this);
+		layout2.setOrientation(LinearLayout.HORIZONTAL);
+		layout2.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+		layout2.addView(password);
+		layout2.addView(showPassword);
+
+		layout.addView(layout2);
 
 		addPrinter = new Button(this);
 		addPrinter.setEnabled(false);
