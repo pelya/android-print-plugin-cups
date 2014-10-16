@@ -407,9 +407,15 @@ public class AddPrinterActivity extends Activity
 										printer.getText().toString(), modelList.get(model.getText().toString()),
 										domain.getText().toString().toUpperCase(), user.getText().toString(), password.getText().toString());
 						Cups.updatePrintersInfo(AddPrinterActivity.this);
-						progressCircle.dismiss();
-						Toast.makeText(AddPrinterActivity.this, R.string.printer_added_successfully, Toast.LENGTH_LONG).show();
-						finish();
+						runOnUiThread(new Runnable()
+						{
+							public void run()
+							{
+								progressCircle.dismiss();
+								Toast.makeText(AddPrinterActivity.this, R.string.printer_added_successfully, Toast.LENGTH_LONG).show();
+								finish();
+							}
+						});
 					}
 				}).start();
 			}

@@ -89,25 +89,28 @@ import java.net.URLConnection;
 public class Installer
 {
 	static boolean unpacking = false;
+	public static MainActivity p = null;
 
 	synchronized static boolean isInstalled(Context p)
 	{
 		return new File(p.getFilesDir().getAbsolutePath() + Cups.IMG + Cups.CUPSD).exists();
 	}
 
-	synchronized static void unpackData(final MainActivity p, final TextView text)
+	static void unpackData(final TextView text)
 	{
+		if (unpacking)
+			return;
 		unpacking = true;
 		new Thread(new Runnable()
 		{
 			public void run()
 			{
-				unpackDataThread(p, text);
+				unpackDataThread(text);
 			}
 		}).start();
 	}
 
-	synchronized static void unpackDataThread(final MainActivity p, final TextView text)
+	synchronized static void unpackDataThread(final TextView text)
 	{
 		if (isInstalled(p))
 		{
@@ -186,9 +189,27 @@ public class Installer
 				}
 			}
 
-			setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
+			new Thread(new Runnable()
+			{
+				public void run()
+				{
+					String dots = "";
+					while (unpacking)
+					{
+						setText(p, text, p.getResources().getString(R.string.please_wait_unpack) + dots);
+						dots += ".";
+						try
+						{
+							Thread.sleep(1000);
+						}
+						catch (InterruptedException e)
+						{
+						}
+					}
+				}
+			}).start();
+			
 			new Proc(new String[] {busybox, "cp", "-af", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
-			setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
 			new Proc(new String[] {busybox, "rm", "-rf", "img-armeabi-v7a", "img-x86"}, p.getFilesDir());
 			stream = p.getAssets().open("cupsd.conf");
 			out = new FileOutputStream(new File(Cups.chrootPath(p), "etc/cups/cupsd.conf"));
@@ -200,13 +221,12 @@ public class Installer
 		catch(Exception e)
 		{
 			Log.i(TAG, "Error extracting data: " + e.toString());
+			unpacking = false;
 			setText(p, text, p.getResources().getString(R.string.error_extracting) + " " + e.toString());
 			return;
 		}
 
-		setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
 		Cups.getPrinterModels(p);
-		setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
 
 		unpacking = false;
 		p.enableSettingsButton();

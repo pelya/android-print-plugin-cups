@@ -98,7 +98,7 @@
 	<string name="add_printer_android">Use printer %1$s from your Android device</string>
 	<string name="add_printer_android_ver">Android 4.4 KitKat or newer required</string>
 	<string name="install_printer_plugin">Scan this QR code to install %1$s from Google Play:</string>
-	<string name="scan_qr">Scan this QR code to add printer %1$s:</string>
+	<string name="scan_qr">Scan this QR code to add printer %1$s, and open it in browser:</string>
 	<string name="install_barcode_scanner">Unable to scan QR codes? Install ZXing Barcode Scanner from Google Play.</string>
 
 </resources>

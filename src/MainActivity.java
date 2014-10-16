@@ -118,7 +118,8 @@ public class MainActivity extends Activity
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate");
 		reinitUI();
-		Installer.unpackData(this, text);
+		Installer.p = this;
+		Installer.unpackData(text);
 	}
 
 	@Override synchronized protected void onDestroy()
