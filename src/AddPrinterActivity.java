@@ -88,6 +88,7 @@ import android.text.method.PasswordTransformationMethod;
 import android.widget.Toast;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.view.Gravity;
 import android.net.Uri;
 
 
@@ -332,17 +333,12 @@ public class AddPrinterActivity extends Activity
 		text = new TextView(this);
 		text.setText(R.string.password_desc);
 		text.setTextSize(20);
-		layout.addView(text);
-
-		password = new EditText(this);
-		password.setHint(R.string.password_hint);
-		password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
-		password.setTransformationMethod(PasswordTransformationMethod.getInstance());
-		password.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
+		text.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
 
 		CheckBox showPassword = new CheckBox(this);
 		showPassword.setText(R.string.show_password);
-		password.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
+		showPassword.setTextSize(20);
+		showPassword.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0.0f));
 		showPassword.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener()
 		{
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
@@ -365,10 +361,17 @@ public class AddPrinterActivity extends Activity
 		LinearLayout layout2 = new LinearLayout(this);
 		layout2.setOrientation(LinearLayout.HORIZONTAL);
 		layout2.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-		layout2.addView(password);
+		layout2.addView(text);
 		layout2.addView(showPassword);
 
 		layout.addView(layout2);
+
+		password = new EditText(this);
+		password.setHint(R.string.password_hint);
+		password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		password.setTransformationMethod(PasswordTransformationMethod.getInstance());
+
+		layout.addView(password);
 
 		addPrinter = new Button(this);
 		addPrinter.setEnabled(false);
