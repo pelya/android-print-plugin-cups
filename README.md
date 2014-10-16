@@ -47,4 +47,3 @@ TODO:
 -    Select and de-select pages for print preview
 -   USB printers support, by forwaring calls from libusb to Java
 -   Print on older devices and from older apps, using 'Share' button.
--   Print QR code with printer URL, support for Android intent to add a printer using this URL.
