@@ -119,6 +119,7 @@ public class AddPrinterActivity extends Activity
 		Log.d(TAG, "onCreate");
 
 		scroll = new ScrollView(this);
+		setContentView(scroll);
 
 		layout = new LinearLayout(this);
 		layout.setOrientation(LinearLayout.VERTICAL);
@@ -346,12 +347,12 @@ public class AddPrinterActivity extends Activity
 				int selection = password.getSelectionStart();
 				if (isChecked)
 				{
-					password.setInputType(InputType.TYPE_CLASS_TEXT);
+					password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 					password.setTransformationMethod(null);
 				}
 				else
 				{
-					password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+					password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 					password.setTransformationMethod(PasswordTransformationMethod.getInstance());
 				}
 				password.setSelection(selection);
@@ -368,9 +369,8 @@ public class AddPrinterActivity extends Activity
 
 		password = new EditText(this);
 		password.setHint(R.string.password_hint);
-		password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		password.setTransformationMethod(PasswordTransformationMethod.getInstance());
-
 		layout.addView(password);
 
 		addPrinter = new Button(this);
@@ -420,8 +420,6 @@ public class AddPrinterActivity extends Activity
 		progressCircle.setMessage(getResources().getString(R.string.please_wait));
 
 		updateNetworkTree();
-
-		setContentView(scroll);
 
 		Uri uri = getIntent() != null ? getIntent().getData() : null;
 		if (uri != null && uri.getScheme() != null && uri.getHost() != null &&

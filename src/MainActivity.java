@@ -87,8 +87,6 @@ import android.app.ProgressDialog;
 import android.widget.Toast;
 import android.net.Uri;
 import java.util.*;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 
 
 public class MainActivity extends Activity
@@ -343,17 +341,13 @@ public class MainActivity extends Activity
 					public void onClick(DialogInterface dialog, final int which)
 					{
 						dialog.dismiss();
-						Uri uri = Cups.getPrinterAddress(MainActivity.this, printers[which]);
-						if (uri == null)
-							return;
-						Log.d(TAG, "Printer URI: " + uri.toString());
-						ClipData clip = ClipData.newUri(getContentResolver(), printers[which], uri);
-						ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-						clipboard.setPrimaryClip(clip);
-						Toast.makeText(MainActivity.this, R.string.copied_to_clipboard, Toast.LENGTH_LONG).show();
+						Intent intent = new Intent();
+						intent.setClass(MainActivity.this, SharePrinterActivity.class);
+						intent.putExtra("n", printers[which]);
+						startActivity(intent);
 					}
 				});
-				builder.setPositiveButton(R.string.cancel, new DialogInterface.OnClickListener()
+				builder.setPositiveButton(R.string.close, new DialogInterface.OnClickListener()
 				{
 					public void onClick(DialogInterface d, int s)
 					{

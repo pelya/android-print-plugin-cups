@@ -46,7 +46,7 @@ import java.util.Map;
  *
  * @author dswitkin@google.com (Daniel Switkin)
  */
-final class QRCodeEncoder {
+class QRCodeEncoder {
 
   private static final int WHITE = 0xFFFFFFFF;
   private static final int BLACK = 0xFF000000;
