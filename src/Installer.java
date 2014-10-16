@@ -90,13 +90,14 @@ public class Installer
 {
 	static boolean unpacking = false;
 	public static MainActivity p = null;
+	public static TextView text = null;
 
 	synchronized static boolean isInstalled(Context p)
 	{
 		return new File(p.getFilesDir().getAbsolutePath() + Cups.IMG + Cups.CUPSD).exists();
 	}
 
-	static void unpackData(final TextView text)
+	static void unpackData()
 	{
 		if (unpacking)
 			return;
@@ -105,12 +106,12 @@ public class Installer
 		{
 			public void run()
 			{
-				unpackDataThread(text);
+				unpackDataThread();
 			}
 		}).start();
 	}
 
-	synchronized static void unpackDataThread(final TextView text)
+	synchronized static void unpackDataThread()
 	{
 		if (isInstalled(p))
 		{
@@ -122,7 +123,7 @@ public class Installer
 
 		Log.i(TAG, "Extracting CUPS data");
 
-		setText(p, text, p.getResources().getString(R.string.please_wait_unpack));
+		setText(p.getResources().getString(R.string.please_wait_unpack));
 
 		StatFs storage = new StatFs(p.getFilesDir().getPath());
 		long avail = (long)storage.getAvailableBlocks() * storage.getBlockSize() / 1024 / 1024;
@@ -130,7 +131,7 @@ public class Installer
 		Log.i(TAG, "Available free space: " + avail + " Mb required: " + needed + " Mb");
 		if (avail < needed)
 		{
-			setText(p, text, p.getResources().getString(R.string.not_enough_space, needed, avail));
+			setText(p.getResources().getString(R.string.not_enough_space, needed, avail));
 			return;
 		}
 
@@ -149,7 +150,7 @@ public class Installer
 			{
 				InputStream archiveAssets = p.getAssets().open("dist-cups-jessie.tar.xz");
 				Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
-				Cups.copyStream(archiveAssets, proc.getOutputStream());
+				copyStreamWithProgress(130000000, archiveAssets, proc.getOutputStream());
 				int status = proc.waitFor();
 				Log.i(TAG, "Unpacking data from assets: status: " + status);
 			}
@@ -165,7 +166,7 @@ public class Installer
 					if (!obbFile.exists() || obbFile.length() < 256)
 						throw new IOException("Cannot find data file: " + obbFile.getAbsolutePath());
 					Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
-					copyStreamWithProgress(p, text, obbFile.length(), new FileInputStream(obbFile), proc.getOutputStream());
+					copyStreamWithProgress(obbFile.length(), new FileInputStream(obbFile), proc.getOutputStream());
 					int status = proc.waitFor();
 					Log.i(TAG, "Extract data file: " + obbFile.getAbsolutePath() + " extract command status " + status);
 					// Clear the .obb file, we do not need it anymore
@@ -177,13 +178,13 @@ public class Installer
 					final String ARCHIVE_URL = "http://sourceforge.net/projects/libsdl-android/files/ubuntu/CUPS/dist-cups-jessie.tar.xz/download";
 					Log.i(TAG, "Error unpacking data from OBB: " + ee.toString());
 					Log.i(TAG, "No data archive in OBB, downloading from web: " + ARCHIVE_URL);
-					setText(p, text, p.getResources().getString(R.string.downloading_web));
+					setText(p.getResources().getString(R.string.downloading_web));
 					URL link = new URL(ARCHIVE_URL);
 					URLConnection connection = link.openConnection();
 
 					InputStream download = new BufferedInputStream(connection.getInputStream());
 					Process proc = Runtime.getRuntime().exec(new String[] {busybox, "tar", "xJ"}, null, p.getFilesDir());
-					copyStreamWithProgress(p, text, connection.getContentLength(), download, proc.getOutputStream());
+					copyStreamWithProgress(connection.getContentLength(), download, proc.getOutputStream());
 					int status = proc.waitFor();
 					Log.i(TAG, "Downloading from web: status: " + status);
 				}
@@ -196,7 +197,7 @@ public class Installer
 					String dots = "";
 					while (unpacking)
 					{
-						setText(p, text, p.getResources().getString(R.string.please_wait_unpack) + dots);
+						setText(p.getResources().getString(R.string.please_wait_unpack) + dots);
 						dots += ".";
 						try
 						{
@@ -222,7 +223,7 @@ public class Installer
 		{
 			Log.i(TAG, "Error extracting data: " + e.toString());
 			unpacking = false;
-			setText(p, text, p.getResources().getString(R.string.error_extracting) + " " + e.toString());
+			setText(p.getResources().getString(R.string.error_extracting) + " " + e.toString());
 			return;
 		}
 
@@ -233,7 +234,7 @@ public class Installer
 		Cups.startCupsDaemon(p);
 	}
 
-	static void setText(final Activity p, final TextView text, final String str)
+	static void setText(final String str)
 	{
 		p.runOnUiThread(new Runnable()
 		{
@@ -244,12 +245,12 @@ public class Installer
 		});
 	}
 
-	static void copyStreamWithProgress(final Activity p, final TextView text, long size, InputStream stream, OutputStream out) throws java.io.IOException
+	static void copyStreamWithProgress(long size, InputStream stream, OutputStream out) throws java.io.IOException
 	{
 		byte[] buf = new byte[131072];
 		if (size <= 0)
 			size = 129332656;
-		setText(p, text, p.getResources().getString(R.string.please_wait_unpack_progress, 0));
+		setText(p.getResources().getString(R.string.please_wait_unpack_progress, 0));
 		int len = stream.read(buf);
 		long totalLen = 0;
 		while (len >= 0)
@@ -257,12 +258,12 @@ public class Installer
 			if(len > 0)
 				out.write(buf, 0, len);
 			totalLen += len;
-			setText(p, text, p.getResources().getString(R.string.please_wait_unpack_progress, totalLen * 100 / size));
+			setText(p.getResources().getString(R.string.please_wait_unpack_progress, totalLen * 100 / size));
 			len = stream.read(buf);
 		}
 		stream.close();
 		out.close();
-		setText(p, text, p.getResources().getString(R.string.please_wait_unpack_progress, 100));
+		setText(p.getResources().getString(R.string.please_wait_unpack_progress, 100));
 	}
 
 	static final String TAG = "CupsInstaller";

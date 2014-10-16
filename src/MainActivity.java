@@ -119,7 +119,8 @@ public class MainActivity extends Activity
 		Log.d(TAG, "onCreate");
 		reinitUI();
 		Installer.p = this;
-		Installer.unpackData(text);
+		Installer.text = text;
+		Installer.unpackData();
 	}
 
 	@Override synchronized protected void onDestroy()
