@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<style name="AppTheme" parent="android:Theme.DeviceDefault.Light"> <!-- DeviceDefault -->
+
+		<!-- For the resting Spinner style -->
+		<item name="android:spinnerItemStyle">
+			@style/spinnerItemStyle
+		</item>
+
+		<!-- For each individual Spinner list item once clicked on -->
+		<item name="android:spinnerDropDownItemStyle">
+			@style/spinnerDropDownItemStyle
+		</item>
+
+    </style>
+
+	<style name="AppThemeDialog" parent="android:Theme.DeviceDefault.Light.Dialog">
+
+		<!-- For the resting Spinner style -->
+		<item name="android:spinnerItemStyle">
+			@style/spinnerItemStyle
+		</item>
+
+		<!-- For each individual Spinner list item once clicked on -->
+		<item name="android:spinnerDropDownItemStyle">
+			@style/spinnerDropDownItemStyle
+		</item>
+
+    </style>
+
+	<style name="spinnerItemStyle">
+		<item name="android:padding">10dp</item>
+		<item name="android:textSize">20sp</item>
+		<item name="android:textColor">@android:color/primary_text_light</item>
+	</style>
+
+	<style name="spinnerDropDownItemStyle">
+		<item name="android:padding">10dp</item>
+		<item name="android:textSize">20sp</item>
+		<item name="android:textColor">@android:color/primary_text_light</item>
+	</style>
+
+</resources>

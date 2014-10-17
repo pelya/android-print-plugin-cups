@@ -32,7 +32,6 @@ TODO:
 
 -   Implement AdvancedPrintOptionsActivity:
 -     Page margins
--     Double-sided printing
 -     Collate copies
 -     Prints multiple document pages on each output page (-o number-up=16)
 -     Fit to page
@@ -41,9 +40,12 @@ TODO:
 -      Paper type
 -      Printer tray select
 -      Print resolution
+-     Save advanced options to file
 -   Print preview:
 -    Show or hide print preview in advanced options
 -    Change page margins inside print preview
 -    Select and de-select pages for print preview
 -   USB printers support, by forwaring calls from libusb to Java
--   Print on older devices and from older apps, using 'Share' button.
+-   Print on older devices and from older apps, using 'Share' button
+-   Connect to non-local CUPS server: https://www.cups.org/documentation.php/doc-1.7/ref-client-conf.html
+-   Command-line interface into CUPS installation

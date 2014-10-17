@@ -124,6 +124,7 @@ public class SharePrinterActivity extends Activity
 
 		scroll = new ScrollView(this);
 		setContentView(scroll);
+		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
 		layout = new LinearLayout(this);
 		layout.setOrientation(LinearLayout.VERTICAL);
@@ -169,7 +170,7 @@ public class SharePrinterActivity extends Activity
 		notes.setHint(R.string.notes_hint);
 		notes.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
 		notes.setMinLines(2);
-		notes.setMaxLines(8);
+		notes.setMaxLines(5);
 		layout.addView(notes);
 
 		shareClipboard = new Button(this);
@@ -237,6 +238,10 @@ public class SharePrinterActivity extends Activity
 			}
 		});
 		layout.addView(printQr);
+
+		text = new TextView(this);
+		text.setText("");
+		layout.addView(text);
 
 		close = new Button(this);
 		close.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -381,45 +386,49 @@ public class SharePrinterActivity extends Activity
 			int x = w / 2;
 			int y = 0;
 			int size = h / 50;
-			int qrSize = size * 15;
-			Log.d(TAG, "w " + w + " h " + h + " x " + x + " y " + y + " size " + size + " qrSize " + qrSize + " bounds " + canvas.getClipBounds().toString());
+			Log.d(TAG, "w " + w + " h " + h + " x " + x + " y " + y + " size " + size + " bounds " + canvas.getClipBounds().toString());
 			//layout.draw(canvas);
 			Paint paint = new Paint();
 			paint.setColor(Color.BLACK);
 			paint.setTextSize(size * 1.5f);
 			paint.setTextAlign(Paint.Align.CENTER);
+
 			y += (paint.descent() - paint.ascent()) * 2.5;
-			Log.d(TAG, "y " + y);
 			canvas.drawText(getResources().getString(R.string.add_printer_android, name), x, y, paint);
 			paint.setTextSize(size / 1.3f);
 			y += (paint.descent() - paint.ascent()) * 1.5;
-			Log.d(TAG, "y " + y);
 			canvas.drawText(getResources().getString(R.string.add_printer_android_ver), x, y, paint);
-			paint.setTextSize(size);
-			y += (paint.descent() - paint.ascent()) * 2;
-			canvas.drawText(getResources().getString(R.string.install_printer_plugin, getResources().getString(R.string.app_name)), x, y, paint);
-			y += (paint.descent() - paint.ascent()) * 0.2;
-			paint.setFilterBitmap(false);
-			canvas.drawBitmap(myAppAddr, null, new Rect(x - qrSize / 2, y, x + qrSize / 2, y + qrSize), paint);
-			Log.d(TAG, "y " + y);
-			y += qrSize;
-			y += (paint.descent() - paint.ascent()) * 0.5;
-			canvas.drawText(getResources().getString(R.string.scan_qr, name), x, y, paint);
-			y += (paint.descent() - paint.ascent()) * 0.5;
-			canvas.drawBitmap(qr, null, new Rect(x - qrSize / 2, y, x + qrSize / 2, y + qrSize), paint);
-			y += qrSize;
-			y += (paint.descent() - paint.ascent()) * 0.8;
-			Log.d(TAG, "y " + y);
-			paint.setTextSize(size / 1.3f);
+			y += (paint.descent() - paint.ascent()) * 1.2;
 			canvas.drawText(getResources().getString(R.string.install_barcode_scanner, name), x, y, paint);
 			paint.setTextSize(size);
-			y += (paint.descent() - paint.ascent()) * 2;
-			Log.d(TAG, "y " + y);
+			y += (paint.descent() - paint.ascent()) * 1.5;
+			canvas.drawText(getResources().getString(R.string.install_printer_plugin, getResources().getString(R.string.app_name)), x, y, paint);
+			y += (paint.descent() - paint.ascent()) * 0.2;
+
+			int qrSize = size * 13;
+			paint.setFilterBitmap(false);
+			canvas.drawBitmap(myAppAddr, null, new Rect(x - qrSize / 2, y, x + qrSize / 2, y + qrSize), paint);
+			y += qrSize;
+
+			y += (paint.descent() - paint.ascent()) * 0.7;
+			canvas.drawText(getResources().getString(R.string.install_printer_plugin_enable, getResources().getString(R.string.app_name)), x, y, paint);
+			y += (paint.descent() - paint.ascent()) * 1;
+			canvas.drawText(getResources().getString(R.string.scan_qr, name), x, y, paint);
+			paint.setTextSize(size / 1.3f);
+			y += (paint.descent() - paint.ascent()) * 1;
+			canvas.drawText(getResources().getString(R.string.scan_qr_open_browser), x, y, paint);
+			paint.setTextSize(size);
+			y += (paint.descent() - paint.ascent()) * 0.2;
+
+			qrSize = size * 20;
+			canvas.drawBitmap(qr, null, new Rect(x - qrSize / 2, y, x + qrSize / 2, y + qrSize), paint);
+			y += qrSize;
+
+			y += (paint.descent() - paint.ascent()) * 0.8;
 			for (String line: notes.split("\n"))
 			{
 				canvas.drawText(line, x, y, paint);
 				y += (paint.descent() - paint.ascent()) * 1;
-				Log.d(TAG, "y " + y);
 			}
 		}
 	}

@@ -413,6 +413,7 @@ public class Cups
 														final String mediaSize,
 														boolean landscape,
 														final String resolution,
+														final Options.DoubleSided doubleSided,
 														final PageRange[] pages )
 	{
 		updateDns(p);
@@ -466,6 +467,11 @@ public class Cups
 			params.add("-o");
 			params.add("Resolution=" + resolution);
 		}
+		if (doubleSided.lpOption != null)
+		{
+			params.add("-o");
+			params.add(doubleSided.lpOption);
+		}
 		if (pages != null)
 		{
 			params.add("-P");
@@ -506,7 +512,7 @@ public class Cups
 	{
 		final String modelsFileName = "printer-models.txt";
 		File modelsFile = new File(chrootPath(p), modelsFileName);
-		if (!modelsFile.exists())
+		if (!modelsFile.exists() || modelsFile.length() < 100000)
 		{
 			Proc pp = new Proc(new String[] {PROOT, "/bin/sh", "-c", LPINFO + " -m > " + modelsFileName}, chrootPath(p));
 		}

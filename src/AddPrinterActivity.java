@@ -121,6 +121,8 @@ public class AddPrinterActivity extends Activity
 		scroll = new ScrollView(this);
 		setContentView(scroll);
 
+		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
 		layout = new LinearLayout(this);
 		layout.setOrientation(LinearLayout.VERTICAL);
 		layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -372,6 +374,10 @@ public class AddPrinterActivity extends Activity
 		password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		password.setTransformationMethod(PasswordTransformationMethod.getInstance());
 		layout.addView(password);
+
+		text = new TextView(this);
+		text.setText("");
+		layout.addView(text);
 
 		addPrinter = new Button(this);
 		addPrinter.setEnabled(false);

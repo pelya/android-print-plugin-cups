@@ -71,59 +71,99 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import android.content.pm.ActivityInfo;
 import android.view.Display;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Surface;
 import android.app.ProgressDialog;
+import android.text.util.Linkify;
+import android.provider.Settings;
+import android.app.AlertDialog;
+import android.widget.ScrollView;
+import android.content.DialogInterface;
+import android.app.ProgressDialog;
+import android.widget.Toast;
 import android.net.Uri;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
+import java.util.*;
 import android.print.*;
 import android.printservice.*;
 
 
 public class AdvancedPrintOptionsActivity extends Activity
 {
+	private ScrollView scroll = null;
 	private LinearLayout layout = null;
-	private TextView text = null;
-	private Button sourcesUrl = null;
 	private Button close = null;
-	private TextView text2 = null;
+	private Spinner doubleSided = null;
 
 	private PrintJobInfo.Builder jobInfo;
-
-	// TODO: option for two-sided printing
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate");
+
+		PrintJobInfo oldJobInfo = (PrintJobInfo) getIntent().getParcelableExtra(PrintService.EXTRA_PRINT_JOB_INFO);
+		if (oldJobInfo == null)
+		{
+			AdvancedPrintOptionsActivity.this.setResult(Activity.RESULT_CANCELED, new Intent());
+			finish();
+		}
+
+		jobInfo = new PrintJobInfo.Builder(oldJobInfo);
+
+		scroll = new ScrollView(this);
+		setContentView(scroll);
+
 		layout = new LinearLayout(this);
 		layout.setOrientation(LinearLayout.VERTICAL);
 		layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
-		
+		layout.setPadding(10, 10, 10, 10);
+		scroll.addView(layout);
+
+		TextView text;
+
 		text = new TextView(this);
-		text.setText(getResources().getString(R.string.not_implemented_yet));
+		text.setText(getResources().getString(R.string.double_sided_printing));
 		text.setTextSize(20);
-		text.setPadding(20, 20, 20, 50);
 		layout.addView(text);
-		
-		sourcesUrl = new Button(this);
-		sourcesUrl.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-		sourcesUrl.setText(getResources().getString(R.string.sources_url));
-		sourcesUrl.setOnClickListener(new View.OnClickListener()
+
+		doubleSided = new Spinner(this, Spinner.MODE_DROPDOWN);
+		//doubleSided.setTextSize(20);
+		ArrayAdapter<CharSequence> adapter = new ArrayAdapter(this, android.R.layout.simple_spinner_item, Options.DoubleSided.getStrings(this));
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		//adapter.setDropDownViewResource(R.layout.spinner_item);
+		doubleSided.setAdapter(adapter);
+		doubleSided.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
 		{
-			public void onClick(View v)
+			public void onItemSelected(AdapterView parent, View view, int pos, long id)
 			{
-				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(getResources().getString(R.string.sources_url))));
+				Log.d(TAG, "DoubleSided: pos" + pos + " id " + id);
+				jobInfo.putAdvancedOption(Options.DoubleSided.name, (int)id);
+			}
+			public void onNothingSelected(AdapterView parent)
+			{
+				Log.d(TAG, "DoubleSided: clear selection");
+				jobInfo.putAdvancedOption(Options.DoubleSided.name, Options.DoubleSided.NONE.idx);
 			}
 		});
-		layout.addView(sourcesUrl);
+		layout.addView(doubleSided);
+
+		text = new TextView(this);
+		text.setText("");
+		layout.addView(text);
 
 		close = new Button(this);
 		close.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 		close.setText(getResources().getString(R.string.close));
+		close.setTextSize(20);
 		close.setOnClickListener(new View.OnClickListener()
 		{
 			public void onClick(View v)
@@ -135,24 +175,6 @@ public class AdvancedPrintOptionsActivity extends Activity
 			}
 		});
 		layout.addView(close);
-
-		text2 = new TextView(this);
-		text2.setText(getResources().getString(R.string.not_implemented_advanced_options));
-		text2.setTextSize(20);
-		text2.setPadding(20, 20, 20, 50);
-		layout.addView(text2);
-
-		setContentView(layout);
-
-		PrintJobInfo oldJobInfo = (PrintJobInfo) getIntent().getParcelableExtra(PrintService.EXTRA_PRINT_JOB_INFO);
-		if (oldJobInfo == null)
-		{
-			AdvancedPrintOptionsActivity.this.setResult(Activity.RESULT_CANCELED, new Intent());
-			finish();
-		}
-
-		jobInfo = new PrintJobInfo.Builder(oldJobInfo);
-		// jobInfo.putAdvancedOption()
 	}
 
 	static public final String TAG = "AdvancedPrintOptionsActivity";

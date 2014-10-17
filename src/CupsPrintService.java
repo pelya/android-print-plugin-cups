@@ -339,6 +339,7 @@ public class CupsPrintService extends PrintService
 							job.getInfo().getAttributes().getResolution() != null &&
 							resolutions.contains(job.getInfo().getAttributes().getResolution().getId()) ?
 							job.getInfo().getAttributes().getResolution().getId() : null,
+							Options.DoubleSided.get(job),
 							job.getInfo().getPages() != null && job.getInfo().getPages().length > 0 &&
 							job.getInfo().getPages()[0].getStart() > 0 && job.getInfo().getPages()[0].getEnd() > 0 ?
 							job.getInfo().getPages() : null );

@@ -150,6 +150,7 @@ public class MainActivity extends Activity
 		layout = new LinearLayout(this);
 		layout.setOrientation(LinearLayout.VERTICAL);
 		layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
+		layout.setPadding(10, 10, 10, 10);
 		
 		text = new TextView(this);
 		text.setText(R.string.init);

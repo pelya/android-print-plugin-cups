@@ -58,7 +58,6 @@
 	<string name="restart_printing">Resume all print jobs</string>
 	<string name="stop_print_service">Stop print service, this frees CPU and memory</string>
 	<string name="service_restarted_automatically">Service will be restarted automatically during printing</string>
-	<string name="share_printer_address">Share printer address</string>
 
 	<string name="name_desc">Printer description</string>
 	<string name="name_hint">Printer in kitchen</string>
@@ -88,6 +87,8 @@
 	<string name="error_job_disappeared">Print job took too long or printer was deleted</string>
 	<string name="copied_to_clipboard">Printer address copied to clipboard</string>
 	<string name="printer_added_successfully">Printer added successfully</string>
+
+	<string name="share_printer_address">Share printer address / print QR code</string>
 	<string name="notes_desc">Notes to print with QR code</string>
 	<string name="notes_hint">Connect to WiFi before printing.\nUse responsibly.</string>
 	<string name="share_password_warning">Password will be shared in plain text. Are you sure you want to share password?</string>
@@ -97,8 +98,15 @@
 	<string name="share_printer_x_address">Share printer %1$s address</string>
 	<string name="add_printer_android">Use printer %1$s from your Android device</string>
 	<string name="add_printer_android_ver">Android 4.4 KitKat or newer required</string>
-	<string name="install_printer_plugin">Scan this QR code to install %1$s from Google Play:</string>
-	<string name="scan_qr">Scan this QR code to add printer %1$s, and open it in browser:</string>
+	<string name="install_printer_plugin">Scan this QR code to install %1$s from Google Play</string>
+	<string name="install_printer_plugin_enable">Enable %1$s in Android Settings in Printing</string>
+	<string name="scan_qr">Scan this QR code, to add the printer %1$s</string>
+	<string name="scan_qr_open_browser">Select "Open in browser" when asked how to open the link</string>
 	<string name="install_barcode_scanner">Unable to scan QR codes? Install ZXing Barcode Scanner from Google Play.</string>
+
+	<string name="double_sided_printing">Double-sided printing (must be supported by printer)</string>
+	<string name="double_sided_none">Off, single-sided</string>
+	<string name="double_sided_short">Short-edge binding, double-sided</string>
+	<string name="double_sided_long">Long-edge binding, double-sided</string>
 
 </resources>
