@@ -58,6 +58,7 @@
 	<string name="restart_printing">Resume all print jobs</string>
 	<string name="stop_print_service">Stop print service, this frees CPU and memory</string>
 	<string name="service_restarted_automatically">Service will be restarted automatically during printing</string>
+	<string name="stop_service_after_changes">Stop print service after adding printers from advanced interface</string>
 
 	<string name="name_desc">Printer description</string>
 	<string name="name_hint">Printer in kitchen</string>

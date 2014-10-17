@@ -430,6 +430,7 @@ public class MainActivity extends Activity
 		{
 			public void onClick(View v)
 			{
+				Toast.makeText(MainActivity.this, R.string.stop_service_after_changes, Toast.LENGTH_LONG).show();
 				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://127.0.0.1:6631/")));
 			}
 		});
