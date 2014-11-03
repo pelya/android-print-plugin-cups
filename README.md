@@ -50,3 +50,4 @@ TODO:
 -   Print on older devices and from older apps, using 'Share' button
 -   Connect to non-local CUPS server: https://www.cups.org/documentation.php/doc-1.7/ref-client-conf.html
 -   Command-line interface into CUPS installation
+-   Add non-Samba printer by URL, share non-Samba printer
