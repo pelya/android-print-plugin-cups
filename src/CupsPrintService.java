@@ -56,9 +56,6 @@ import java.io.OutputStream;
 import java.io.FileOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.zip.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import java.util.Set;
 import android.text.SpannedString;
 import java.io.BufferedReader;
@@ -331,7 +328,6 @@ public class CupsPrintService extends PrintService
 							this,
 							job,
 							job.getInfo().getPrinterId().getLocalId(),
-							//job.getDocument().getData().getFileDescriptor(),
 							job.getInfo().getLabel().length() > 0 ? job.getInfo().getLabel() : "PrintJob",
 							job.getInfo().getCopies(),
 							mediaSize,
@@ -339,7 +335,6 @@ public class CupsPrintService extends PrintService
 							job.getInfo().getAttributes().getResolution() != null &&
 							resolutions.contains(job.getInfo().getAttributes().getResolution().getId()) ?
 							job.getInfo().getAttributes().getResolution().getId() : null,
-							Options.DoubleSided.get(job),
 							job.getInfo().getPages() != null && job.getInfo().getPages().length > 0 &&
 							job.getInfo().getPages()[0].getStart() > 0 && job.getInfo().getPages()[0].getEnd() > 0 ?
 							job.getInfo().getPages() : null );

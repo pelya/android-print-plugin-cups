@@ -105,9 +105,19 @@
 	<string name="scan_qr_open_browser">Select "Open in browser" when asked how to open the link</string>
 	<string name="install_barcode_scanner">Unable to scan QR codes? Install ZXing Barcode Scanner from Google Play.</string>
 
-	<string name="double_sided_printing">Double-sided printing (must be supported by printer)</string>
+	<string name="double_sided_printing">Double-sided printing</string>
+	<string name="double_sided_printing_hint">Not all printers support double-sided printing</string>
 	<string name="double_sided_none">Off, single-sided</string>
-	<string name="double_sided_short">Short-edge binding, double-sided</string>
-	<string name="double_sided_long">Long-edge binding, double-sided</string>
+	<string name="double_sided_short">Short-edge binding</string>
+	<string name="double_sided_long">Long-edge binding</string>
+
+	<string name="multiple_pages_per_sheet">Multiple pages per sheet</string>
+	<string name="multiple_pages_per_sheet_hint">All pages will be shrinked from their original size</string>
+	<string name="multiple_pages_per_sheet_1">Off</string>
+	<string name="multiple_pages_per_sheet_2">2 pages, ½ original size</string>
+	<string name="multiple_pages_per_sheet_4">4 pages, ¼ original size</string>
+	<string name="multiple_pages_per_sheet_6">6 pages</string>
+	<string name="multiple_pages_per_sheet_9">9 pages</string>
+	<string name="multiple_pages_per_sheet_16">16 pages</string>
 
 </resources>

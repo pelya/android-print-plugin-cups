@@ -56,9 +56,6 @@ import java.io.OutputStream;
 import java.io.FileOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.zip.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import java.util.Set;
 import android.text.SpannedString;
 import java.io.BufferedReader;
@@ -100,7 +97,8 @@ public class AdvancedPrintOptionsActivity extends Activity
 	private ScrollView scroll = null;
 	private LinearLayout layout = null;
 	private Button close = null;
-	private Spinner doubleSided = null;
+	public Spinner doubleSided = null;
+	public Spinner multiplePages = null;
 
 	private PrintJobInfo.Builder jobInfo;
 
@@ -111,11 +109,12 @@ public class AdvancedPrintOptionsActivity extends Activity
 		Log.d(TAG, "onCreate");
 
 		PrintJobInfo oldJobInfo = (PrintJobInfo) getIntent().getParcelableExtra(PrintService.EXTRA_PRINT_JOB_INFO);
-		if (oldJobInfo == null)
+		if (oldJobInfo == null || oldJobInfo.getPrinterId() == null || oldJobInfo.getPrinterId().getLocalId() == null)
 		{
 			AdvancedPrintOptionsActivity.this.setResult(Activity.RESULT_CANCELED, new Intent());
 			finish();
 		}
+		final String printerId = oldJobInfo.getPrinterId().getLocalId();
 
 		jobInfo = new PrintJobInfo.Builder(oldJobInfo);
 
@@ -135,11 +134,16 @@ public class AdvancedPrintOptionsActivity extends Activity
 		text.setTextSize(20);
 		layout.addView(text);
 
+		text = new TextView(this);
+		text.setText(getResources().getString(R.string.double_sided_printing_hint));
+		text.setTextSize(14);
+		layout.addView(text);
+
+		ArrayAdapter<CharSequence> adapter;
+
 		doubleSided = new Spinner(this, Spinner.MODE_DROPDOWN);
-		//doubleSided.setTextSize(20);
-		ArrayAdapter<CharSequence> adapter = new ArrayAdapter(this, android.R.layout.simple_spinner_item, Options.DoubleSided.getStrings(this));
+		adapter = new ArrayAdapter(this, android.R.layout.simple_spinner_item, Options.DoubleSided.getStrings(this));
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		//adapter.setDropDownViewResource(R.layout.spinner_item);
 		doubleSided.setAdapter(adapter);
 		doubleSided.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
 		{
@@ -151,13 +155,48 @@ public class AdvancedPrintOptionsActivity extends Activity
 			public void onNothingSelected(AdapterView parent)
 			{
 				Log.d(TAG, "DoubleSided: clear selection");
-				jobInfo.putAdvancedOption(Options.DoubleSided.name, Options.DoubleSided.NONE.idx);
+				jobInfo.putAdvancedOption(Options.DoubleSided.name, 0);
 			}
 		});
 		layout.addView(doubleSided);
 
 		text = new TextView(this);
 		text.setText("");
+		text.setTextSize(10);
+		layout.addView(text);
+
+		text = new TextView(this);
+		text.setText(getResources().getString(R.string.multiple_pages_per_sheet));
+		text.setTextSize(20);
+		layout.addView(text);
+
+		text = new TextView(this);
+		text.setText(getResources().getString(R.string.multiple_pages_per_sheet_hint));
+		text.setTextSize(14);
+		layout.addView(text);
+
+		multiplePages = new Spinner(this, Spinner.MODE_DROPDOWN);
+		adapter = new ArrayAdapter(this, android.R.layout.simple_spinner_item, Options.MultiplePages.getStrings(this));
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		multiplePages.setAdapter(adapter);
+		multiplePages.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
+		{
+			public void onItemSelected(AdapterView parent, View view, int pos, long id)
+			{
+				Log.d(TAG, "multiplePages: pos" + pos + " id " + id);
+				jobInfo.putAdvancedOption(Options.MultiplePages.name, (int)id);
+			}
+			public void onNothingSelected(AdapterView parent)
+			{
+				Log.d(TAG, "MultiplePages: clear selection");
+				jobInfo.putAdvancedOption(Options.MultiplePages.name, 0);
+			}
+		});
+		layout.addView(multiplePages);
+
+		text = new TextView(this);
+		text.setText("");
+		text.setTextSize(10);
 		layout.addView(text);
 
 		close = new Button(this);
@@ -168,6 +207,7 @@ public class AdvancedPrintOptionsActivity extends Activity
 		{
 			public void onClick(View v)
 			{
+				Options.saveOptions(AdvancedPrintOptionsActivity.this, printerId);
 				Intent resultIntent = new Intent();
 				resultIntent.putExtra(PrintService.EXTRA_PRINT_JOB_INFO, jobInfo.build());
 				AdvancedPrintOptionsActivity.this.setResult(Activity.RESULT_OK, resultIntent);
@@ -175,6 +215,8 @@ public class AdvancedPrintOptionsActivity extends Activity
 			}
 		});
 		layout.addView(close);
+
+		Options.loadOptions(this, printerId);
 	}
 
 	static public final String TAG = "AdvancedPrintOptionsActivity";

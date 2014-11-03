@@ -56,9 +56,6 @@ import java.io.OutputStream;
 import java.io.FileOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.zip.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import java.util.Set;
 import android.text.SpannedString;
 import java.io.BufferedReader;
@@ -413,7 +410,6 @@ public class Cups
 														final String mediaSize,
 														boolean landscape,
 														final String resolution,
-														final Options.DoubleSided doubleSided,
 														final PageRange[] pages )
 	{
 		updateDns(p);
@@ -467,10 +463,15 @@ public class Cups
 			params.add("-o");
 			params.add("Resolution=" + resolution);
 		}
-		if (doubleSided.lpOption != null)
+		if (Options.DoubleSided.get(job).lpOption != null)
 		{
 			params.add("-o");
-			params.add(doubleSided.lpOption);
+			params.add(Options.DoubleSided.get(job).lpOption);
+		}
+		if (Options.MultiplePages.get(job).lpOption != null)
+		{
+			params.add("-o");
+			params.add(Options.MultiplePages.get(job).lpOption);
 		}
 		if (pages != null)
 		{
