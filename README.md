@@ -31,16 +31,17 @@ TODO:
 =====
 
 -   Implement AdvancedPrintOptionsActivity:
--     Page margins
--     Collate copies
--     Prints multiple document pages on each output page (-o number-up=16)
--     Fit to page
--     Resize print content to fit into less amount of pages, by reporting bigger paper size and rescaling it back when printing
--     All options configurable by lpoptions:
--      Paper type
--      Printer tray select
--      Print resolution
--     Save advanced options to file
+-    Page margins
+-    Collate copies
+-    Prints multiple document pages on each output page (-o number-up=16)
+-    Fit to page
+-    Resize print content to fit into less amount of pages, by reporting bigger paper size and rescaling it back when printing
+-    All options configurable by lpoptions:
+-     Paper type
+-     Printer tray select
+-     Print resolution
+-    Save advanced options to file
+-    Booklet print
 -   Print preview:
 -    Show or hide print preview in advanced options
 -    Change page margins inside print preview
