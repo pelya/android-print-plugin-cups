@@ -48,3 +48,4 @@ TODO:
 -   Connect to non-local CUPS server: https://www.cups.org/documentation.php/doc-1.7/ref-client-conf.html
 -   Command-line interface into CUPS installation
 -   Add non-Samba printer by URL, share non-Samba printer
+-   Search for IPP and Bonjour printers using cups-browsed
