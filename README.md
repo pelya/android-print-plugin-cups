@@ -50,3 +50,4 @@ TODO:
 -   Add non-Samba printer by URL, share non-Samba printer
 -   Search for IPP and Bonjour printers using cups-browsed
 -   When printing to CUPS server, [CUPS web interface shows an error: "Failed to connect to system bus"](screenshots/cups-android-error.jpg)
+-   Set LANG to make CUPS print localized error messages
