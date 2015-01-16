@@ -49,4 +49,4 @@ TODO:
 -   Command-line interface into CUPS installation
 -   Add non-Samba printer by URL, share non-Samba printer
 -   Search for IPP and Bonjour printers using cups-browsed
--   When printing to CUPS server, plugin shows error: "Failed to connect to system bus"
+-   When printing to CUPS server, [CUPS web interface shows an error: "Failed to connect to system bus"](screenshots/cups-android-error.jpg)
