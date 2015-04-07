@@ -51,3 +51,4 @@ TODO:
 -   Search for IPP and Bonjour printers using cups-browsed
 -   When printing to CUPS server, [CUPS web interface shows an error: "Failed to connect to system bus"](screenshots/cups-android-error.jpg)
 -   Set LANG to make CUPS print localized error messages
+-   When printing page range and multiple copies, CUPS collates pages and we don't want that
