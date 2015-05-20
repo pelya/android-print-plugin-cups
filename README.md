@@ -30,6 +30,7 @@ Don't ask me how to import this project into Android Studio or Eclipse.
 TODO:
 =====
 
+-   Add support for 64-bit architectures.
 -   Implement AdvancedPrintOptionsActivity:
 -    Page margins
 -    Collate copies
