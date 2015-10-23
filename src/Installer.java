@@ -134,12 +134,32 @@ public class Installer
 
 		try
 		{
-			p.getFilesDir().mkdirs();
-			InputStream stream = p.getAssets().open("busybox-" + android.os.Build.CPU_ABI);
 			String busybox = new File(p.getFilesDir(), "busybox").getAbsolutePath();
-			OutputStream out = new FileOutputStream(busybox);
+			InputStream stream;
+			OutputStream out;
+			p.getFilesDir().mkdirs();
 
-			Cups.copyStream(stream, out);
+			String ARCH = android.os.Build.CPU_ABI;
+			try
+			{
+				stream = p.getAssets().open("busybox-" + ARCH);
+				out = new FileOutputStream(busybox);
+				Cups.copyStream(stream, out);
+			}
+			catch (Exception eeeee)
+			{
+				try
+				{
+					ARCH = android.os.Build.CPU_ABI2;
+					stream = p.getAssets().open("busybox-" + ARCH);
+					out = new FileOutputStream(busybox);
+					Cups.copyStream(stream, out);
+				}
+				catch (Exception eeeeee)
+				{
+					throw new Exception("Unsupported architecture: " + android.os.Build.CPU_ABI);
+				}
+			}
 
 			new Proc(new String[] {"/system/bin/chmod", "0755", busybox}, p.getFilesDir());
 
@@ -151,7 +171,7 @@ public class Installer
 				int status = proc.waitFor();
 				Log.i(TAG, "Unpacking data from assets: status: " + status);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
 				Log.i(TAG, "Error unpacking data from assets: " + e.toString());
 				Log.i(TAG, "No data archive in assets, trying OBB data");
@@ -207,7 +227,7 @@ public class Installer
 				}
 			}).start();
 			
-			new Proc(new String[] {busybox, "cp", "-af", "img-" + android.os.Build.CPU_ABI + "/.", "img/"}, p.getFilesDir());
+			new Proc(new String[] {busybox, "cp", "-af", "img-" + ARCH + "/.", "img/"}, p.getFilesDir());
 			new Proc(new String[] {busybox, "rm", "-rf", "img-armeabi-v7a", "img-x86"}, p.getFilesDir());
 			stream = p.getAssets().open("cupsd.conf");
 			out = new FileOutputStream(new File(Cups.chrootPath(p), "etc/cups/cupsd.conf"));
